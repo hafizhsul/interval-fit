@@ -48,6 +48,9 @@ dependencies:
   # Background execution (Phase 5)
   flutter_background_service: ^5.1.0
 
+  # SVG rendering for exercise illustrations
+  flutter_svg: ^2.0.10+1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -75,6 +78,7 @@ flutter:
 
   assets:
     - assets/audio/
+    - assets/svg/
 
   fonts:
     - family: Barlow
