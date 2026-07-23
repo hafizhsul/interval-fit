@@ -36,7 +36,7 @@ class _AthleticCardState extends State<AthleticCard> with SingleTickerProviderSt
 
   void _setDown(bool v) {
     if (_down != v) setState(() => _down = v);
-    if (v) _ctrl.forward(); else _ctrl.reverse();
+    if (v) { _ctrl.forward(); } else { _ctrl.reverse(); }
   }
 
   @override

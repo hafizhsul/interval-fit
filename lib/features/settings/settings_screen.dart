@@ -52,7 +52,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               settings.setVoiceEnabled(v);
               voice.setEnabled(v);
             },
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
             contentPadding: EdgeInsets.zero,
             dense: true,
           ),

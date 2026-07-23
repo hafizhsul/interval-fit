@@ -106,6 +106,15 @@ class _SessionTile extends ConsumerWidget {
         backgroundColor: AppColors.surfaceHigh,
         child: Icon(icon, color: color),
       ),
+      trailing: MetricBadge(
+        label: session.completed ? 'Completed' : 'Partial',
+        value: '',
+        color: color,
+        child: Icon(
+          _sessionIcon(session),
+          color: color,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Column(
@@ -120,11 +129,6 @@ class _SessionTile extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-      trailing: MetricBadge(
-        label: session.completed ? 'Completed' : 'Partial',
-        value: '',
-        color: color,
       ),
     );
   }

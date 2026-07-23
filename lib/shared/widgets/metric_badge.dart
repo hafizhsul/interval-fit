@@ -9,11 +9,13 @@ class MetricBadge extends StatelessWidget {
     required this.label,
     required this.value,
     this.color,
+    this.child,
   });
 
   final String label;
   final String value;
   final Color? color;
+  final Widget? child;
 
   @override
   Widget build(BuildContext context) {
@@ -24,13 +26,21 @@ class MetricBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(value, style: const TextStyle(fontFamily: 'Barlow', fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.onSurface)),
-          Text(label, style: const TextStyle(fontFamily: 'Barlow', fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1, color: AppColors.onSurfaceMute)),
-        ],
-      ),
+      child: child != null
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                child!,
+                Text(label, style: Theme.of(context).textTheme.labelMedium),
+              ],
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(value, style: Theme.of(context).textTheme.headlineSmall),
+                Text(label, style: Theme.of(context).textTheme.labelMedium),
+              ],
+            ),
     );
   }
 }

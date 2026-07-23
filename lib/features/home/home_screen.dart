@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/providers.dart';
 import '../../data/models/workout_template.dart';
+import '../../shared/design/tokens.dart';
 import '../../shared/format.dart';
 import '../../shared/theme/app_theme.dart';
+import '../../shared/widgets/athletic_card.dart';
 import '../active_workout/active_workout_screen.dart';
 import '../history/history_screen.dart';
 import '../settings/settings_screen.dart';
@@ -18,17 +21,33 @@ class HomeScreen extends ConsumerWidget {
     final templates = ref.watch(templateListProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('INTERVALFIT'),
+        title: Text(
+          'INTERVALFIT',
+          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+            color: AppColors.primary,
+            letterSpacing: 2,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.history),
+            icon: SvgPicture.asset(
+              'assets/svg/history.svg',
+              width: 24,
+              height: 24,
+              colorFilter: const ColorFilter.mode(AppColors.onSurfaceMute, BlendMode.srcIn),
+            ),
             tooltip: 'History',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const HistoryScreen()),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: SvgPicture.asset(
+              'assets/svg/settings.svg',
+              width: 24,
+              height: 24,
+              colorFilter: const ColorFilter.mode(AppColors.onSurfaceMute, BlendMode.srcIn),
+            ),
             tooltip: 'Settings',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -42,19 +61,13 @@ class HomeScreen extends ConsumerWidget {
         data: (list) {
           if (list.isEmpty) return const _EmptyState();
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+            padding: EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.xxl),
             itemCount: list.length,
             itemBuilder: (context, i) => _TemplateCard(template: list[i]),
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const TemplateBuilderScreen()),
-        ),
-        icon: const Icon(Icons.add),
-        label: const Text('Template'),
-      ),
+      floatingActionButton: _NewTemplateFab(),
     );
   }
 }
@@ -66,18 +79,24 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.fitness_center,
-                size: 72, color: AppColors.primary.withValues(alpha: 0.7)),
-            const SizedBox(height: 16),
-            Text('No templates yet',
-                style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            const Text('Tap the Template button to create your first session.',
-                textAlign: TextAlign.center),
+            SvgPicture.asset(
+              'assets/svg/dumbbell.svg',
+              width: 96,
+              height: 96,
+              colorFilter: const ColorFilter.mode(AppColors.onSurfaceDim, BlendMode.srcIn),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text('No templates yet', style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Tap the New Template button to create your first session.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ],
         ),
       ),
@@ -85,8 +104,20 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-/// Warna aksen kartu per jenis latihan (fungsional, bukan hiasan).
-Color _accentFor(String exerciseType) {
+String _exerciseIconPath(String exerciseType) {
+  switch (exerciseType) {
+    case 'skipping':
+      return 'assets/svg/skipping.svg';
+    case 'walk':
+      return 'assets/svg/walk.svg';
+    case 'run':
+      return 'assets/svg/run.svg';
+    default:
+      return 'assets/svg/custom.svg';
+  }
+}
+
+Color _exerciseColor(String exerciseType) {
   switch (exerciseType) {
     case 'run':
       return AppColors.work;
@@ -96,19 +127,6 @@ Color _accentFor(String exerciseType) {
       return AppColors.primary;
     default:
       return AppColors.rest;
-  }
-}
-
-IconData _iconFor(String exerciseType) {
-  switch (exerciseType) {
-    case 'run':
-      return Icons.directions_run;
-    case 'walk':
-      return Icons.directions_walk;
-    case 'skipping':
-      return Icons.sports_gymnastics;
-    default:
-      return Icons.fitness_center;
   }
 }
 
@@ -143,69 +161,78 @@ class _TemplateCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accent = _accentFor(template.exerciseType);
+    final accent = _exerciseColor(template.exerciseType);
+    final iconPath = _exerciseIconPath(template.exerciseType);
     final summary =
         '${template.sets} sets · ${shortDuration(template.workSeconds)} work / '
         '${shortDuration(template.restSeconds)} rest';
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ActiveWorkoutScreen(template: template),
-          ),
+
+    return AthleticCard(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(template: template)),
+      ),
+      accent: accent,
+      leading: CircleAvatar(
+        radius: 24,
+        backgroundColor: AppColors.surfaceHigh,
+        child: SvgPicture.asset(
+          iconPath,
+          width: 28,
+          height: 28,
+          colorFilter: ColorFilter.mode(accent, BlendMode.srcIn),
         ),
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              // Strip aksen kiri — sinyal jenis latihan.
-              Container(width: 6, color: accent),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: CircleAvatar(
-                  radius: 24,
-                  backgroundColor: accent.withValues(alpha: 0.18),
-                  child: Icon(_iconFor(template.exerciseType), color: accent),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(template.name,
-                          style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 2),
-                      Text(summary,
-                          style: Theme.of(context).textTheme.bodyMedium),
-                    ],
-                  ),
-                ),
-              ),
-              PopupMenuButton<String>(
-                onSelected: (v) async {
-                  if (v == 'edit') {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            TemplateBuilderScreen(existing: template),
-                      ),
-                    );
-                  } else if (v == 'delete') {
-                    await _confirmDelete(context, ref);
-                  }
-                },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'edit', child: Text('Edit')),
-                  PopupMenuItem(value: 'delete', child: Text('Delete')),
-                ],
-              ),
-            ],
-          ),
+      ),
+      trailing: PopupMenuButton<String>(
+        onSelected: (v) async {
+          if (v == 'edit') {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => TemplateBuilderScreen(existing: template)),
+            );
+          } else if (v == 'delete') {
+            await _confirmDelete(context, ref);
+          }
+        },
+        itemBuilder: (_) => const [
+          PopupMenuItem(value: 'edit', child: Text('Edit')),
+          PopupMenuItem(value: 'delete', child: Text('Delete')),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(template.name, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 2),
+            Text(summary, style: Theme.of(context).textTheme.bodyMedium),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _NewTemplateFab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: 1.0,
+      duration: AppMotion.fast,
+      curve: AppMotion.easing,
+      child: FloatingActionButton.extended(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const TemplateBuilderScreen()),
+        ),
+        icon: SvgPicture.asset(
+          'assets/svg/plus.svg',
+          width: 24,
+          height: 24,
+          colorFilter: const ColorFilter.mode(AppColors.background, BlendMode.srcIn),
+        ),
+        label: Text('New Template', style: Theme.of(context).textTheme.labelLarge),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.background,
       ),
     );
   }

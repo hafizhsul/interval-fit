@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
 import '../../data/models/workout_template.dart';
+import '../../shared/design/tokens.dart';
 
 const _exerciseTypes = ['skipping', 'walk', 'run', 'custom'];
 
@@ -85,56 +86,61 @@ class _TemplateBuilderScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.existing == null ? 'New Template' : 'Edit Template'),
+        title: Text(
+          widget.existing == null ? 'New Template' : 'Edit Template',
+          style: Theme.of(context).textTheme.headlineLarge,
+        ),
       ),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.xxl),
           children: [
             TextFormField(
               controller: _name,
               decoration: const InputDecoration(labelText: 'Name'),
+              style: Theme.of(context).textTheme.bodyLarge,
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Name is required' : null,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             DropdownButtonFormField<String>(
-              initialValue: _exerciseType,
               decoration: const InputDecoration(labelText: 'Exercise type'),
+              style: Theme.of(context).textTheme.bodyLarge,
               items: _exerciseTypes
                   .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                   .toList(),
               onChanged: (v) => setState(() => _exerciseType = v!),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             TextFormField(
               controller: _sets,
               decoration: const InputDecoration(labelText: 'Number of sets'),
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              style: Theme.of(context).textTheme.bodyLarge,
               validator: (v) {
                 final n = int.tryParse(v ?? '');
                 return (n == null || n <= 0) ? 'Sets must be > 0' : null;
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             _DurationInput(label: 'Work', field: _work, requirePositive: true),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             _DurationInput(label: 'Rest', field: _rest),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             _DurationInput(label: 'Warm-up (optional)', field: _warmup),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             _DurationInput(label: 'Cooldown (optional)', field: _cooldown),
           ],
         ),
       ),
       // Save pinned to the bottom so it's always reachable without scrolling.
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(AppSpacing.md),
         child: FilledButton(
           onPressed: _save,
-          child: const Text('Save'),
+          child: Text('Save', style: Theme.of(context).textTheme.labelLarge),
         ),
       ),
     );
@@ -199,6 +205,7 @@ class _DurationInputState extends State<_DurationInput> {
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
             ],
+            style: Theme.of(context).textTheme.bodyLarge,
             validator: widget.requirePositive
                 ? (v) {
                     final n = double.tryParse((v ?? '').replaceAll(',', '.'));
@@ -207,7 +214,7 @@ class _DurationInputState extends State<_DurationInput> {
                 : null,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.sm),
         DropdownButton<bool>(
           value: widget.field.isMinutes,
           items: const [
