@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/providers.dart';
 import '../../data/models/workout_session.dart';
+import '../../shared/design/tokens.dart';
 import '../../shared/format.dart';
+import '../../shared/theme/app_theme.dart';
+import '../../shared/widgets/athletic_card.dart';
+import '../../shared/widgets/metric_badge.dart';
 
-/// Provider lokal file ini (tidak menyentuh providers.dart, sesuai batasan).
 final _historyProvider =
     FutureProvider.autoDispose<List<WorkoutSession>>((ref) {
   return ref.watch(historyRepositoryProvider).getAll();
@@ -18,15 +22,16 @@ class HistoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(_historyProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('History')),
+      appBar: AppBar(
+        title: Text('History', style: Theme.of(context).textTheme.headlineLarge),
+      ),
       body: history.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Failed to load history:\n$e')),
         data: (list) {
-          if (list.isEmpty) {
-            return const Center(child: Text('No workout history yet.'));
-          }
+          if (list.isEmpty) return const _EmptyState();
           return ListView.builder(
+            padding: EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.xxl),
             itemCount: list.length,
             itemBuilder: (context, i) => _SessionTile(session: list[i]),
           );
@@ -36,31 +41,91 @@ class HistoryScreen extends ConsumerWidget {
   }
 }
 
-class _SessionTile extends StatelessWidget {
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset(
+              'assets/svg/history.svg',
+              width: 96,
+              height: 96,
+              colorFilter: const ColorFilter.mode(AppColors.onSurfaceDim, BlendMode.srcIn),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text('No history yet', style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Complete a workout to see it here.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Color _sessionColor(WorkoutSession session) {
+  return session.completed ? AppColors.done : AppColors.warmup;
+}
+
+IconData _sessionIcon(WorkoutSession session) {
+  return session.completed ? Icons.check : Icons.pause;
+}
+
+String _formatDate(int epochMs) {
+  final d = DateTime.fromMillisecondsSinceEpoch(epochMs).toLocal();
+  return '${d.year}-${_pad(d.month)}-${_pad(d.day)} ${_pad(d.hour)}:${_pad(d.minute)}';
+}
+
+String _pad(int n) => n.toString().padLeft(2, '0');
+
+class _SessionTile extends ConsumerWidget {
   const _SessionTile({required this.session});
 
   final WorkoutSession session;
 
   @override
-  Widget build(BuildContext context) {
-    final date =
-        DateTime.fromMillisecondsSinceEpoch(session.startedAt).toLocal();
-    final dateStr = '${date.year}-${_pad(date.month)}-${_pad(date.day)} '
-        '${_pad(date.hour)}:${_pad(date.minute)}';
-    return ListTile(
-      title: Text(session.templateName),
-      subtitle: Text(
-        '$dateStr · ${formatMmSs(session.durationSeconds)} · '
-        '${session.setsCompleted}/${session.setsPlanned} set',
+  Widget build(BuildContext context, WidgetRef ref) {
+    final color = _sessionColor(session);
+    final icon = _sessionIcon(session);
+
+    return AthleticCard(
+      onTap: () {},
+      accent: color,
+      leading: CircleAvatar(
+        radius: 24,
+        backgroundColor: AppColors.surfaceHigh,
+        child: Icon(icon, color: color),
       ),
-      trailing: Chip(
-        label: Text(session.completed ? 'Completed' : 'Partial'),
-        backgroundColor: session.completed
-            ? Colors.green.withValues(alpha: 0.3)
-            : Colors.orange.withValues(alpha: 0.3),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(session.templateName, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 2),
+            Text(
+              '${_formatDate(session.startedAt)} · ${formatMmSs(session.durationSeconds)} · ${session.setsCompleted}/${session.setsPlanned} set',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      ),
+      trailing: MetricBadge(
+        label: session.completed ? 'Completed' : 'Partial',
+        value: '',
+        color: color,
       ),
     );
   }
-
-  String _pad(int n) => n.toString().padLeft(2, '0');
 }
