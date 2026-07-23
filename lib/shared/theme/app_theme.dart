@@ -1,33 +1,28 @@
 import 'package:flutter/material.dart';
 
-/// Theme IntervalFit — athletic, high-contrast (PRD NFR aksesibilitas: angka
-/// besar & kontras tinggi, terbaca sambil bergerak). Font Barlow (di-bundle,
-/// bukan google_fonts — app offline-first, tak boleh fetch jaringan).
+import '../design/tokens.dart';
+
 class AppColors {
   AppColors._();
 
-  // Fase — warna fungsional (signaling), bukan dekorasi. Kontras tinggi.
-  /// Fase kerja — merah energik.
-  static const Color work = Color(0xFFE53935);
+  static const Color background = Color(0xFF000000);
+  static const Color surface = Color(0xFF0A0A0B);
+  static const Color surfaceHigh = Color(0xFF15151A);
+  static const Color border = Color(0xFF1F1F26);
+  static const Color onSurface = Color(0xFFF5F5F7);
+  static const Color onSurfaceMute = Color(0xFF8E8E93);
+  static const Color onSurfaceDim = Color(0xFF48484A);
 
-  /// Fase istirahat — biru tenang.
-  static const Color rest = Color(0xFF1E88E5);
+  static const Color primary = Color(0xFFFF6B35);
+  static const Color work = Color(0xFFFF3B30);
+  static const Color rest = Color(0xFF0A84FF);
+  static const Color warmup = Color(0xFFFFD60A);
+  static const Color cooldown = Color(0xFF30D158);
+  static const Color done = Color(0xFF30D158);
+  static const Color destructive = Color(0xFFFF453A);
 
-  /// Warm-up — amber.
-  static const Color warmup = Color(0xFFFB8C00);
-
-  /// Cooldown — teal.
-  static const Color cooldown = Color(0xFF00897B);
-
-  // Brand / surface (design-system: energy orange + success green).
-  static const Color primary = Color(0xFFF97316); // energy orange
-  static const Color accent = Color(0xFF22C55E); // success green (CTA start)
-  static const Color background = Color(0xFF0F172A); // slate-900
-  static const Color surface = Color(0xFF1E293B); // slate-800
-  static const Color border = Color(0xFF334155); // slate-700
-  static const Color onSurface = Color(0xFFF8FAFC); // near-white
-  static const Color muted = Color(0xFF94A3B8); // slate-400 (secondary text)
-  static const Color destructive = Color(0xFFEF4444); // stop/hapus
+  static const Color muted = onSurfaceMute;
+  static const Color accent = done;
 }
 
 class AppTheme {
@@ -41,8 +36,8 @@ class AppTheme {
     final scheme = base.colorScheme.copyWith(
       primary: AppColors.primary,
       onPrimary: AppColors.background,
-      secondary: AppColors.accent,
-      surface: AppColors.surface,
+      secondary: AppColors.done,
+      surface: AppColors.surfaceHigh,
       onSurface: AppColors.onSurface,
       outline: AppColors.border,
     );
@@ -51,9 +46,12 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
       colorScheme: scheme,
       textTheme: base.textTheme
-          .apply(fontFamily: _sans, bodyColor: AppColors.onSurface, displayColor: AppColors.onSurface)
+          .apply(
+            fontFamily: _sans,
+            bodyColor: AppColors.onSurface,
+            displayColor: AppColors.onSurface,
+          )
           .copyWith(
-            // Angka timer full-screen — condensed, sangat besar, tabular.
             displayLarge: const TextStyle(
               fontFamily: _condensed,
               fontSize: 140,
@@ -62,19 +60,66 @@ class AppTheme {
               color: Colors.white,
               fontFeatures: [FontFeature.tabularFigures()],
             ),
-            headlineMedium: const TextStyle(
+            displayMedium: const TextStyle(
               fontFamily: _condensed,
+              fontSize: 64,
+              fontWeight: FontWeight.w700,
+              height: 1.0,
+              color: Colors.white,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+            headlineLarge: const TextStyle(
+              fontFamily: _condensed,
+              fontSize: 32,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
+              color: AppColors.onSurface,
             ),
-            titleLarge: const TextStyle(fontWeight: FontWeight.w600),
-            labelLarge: const TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.3),
+            headlineMedium: const TextStyle(
+              fontFamily: _condensed,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              color: AppColors.onSurfaceMute,
+            ),
+            titleLarge: const TextStyle(
+              fontFamily: _sans,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: AppColors.onSurface,
+            ),
+            bodyLarge: const TextStyle(
+              fontFamily: _sans,
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+              color: AppColors.onSurface,
+            ),
+            bodyMedium: const TextStyle(
+              fontFamily: _sans,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: AppColors.onSurfaceMute,
+            ),
+            labelLarge: const TextStyle(
+              fontFamily: _sans,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+              color: AppColors.onSurface,
+            ),
+            labelSmall: const TextStyle(
+              fontFamily: _sans,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.0,
+              color: AppColors.onSurfaceMute,
+            ),
           ),
       cardTheme: CardThemeData(
-        color: AppColors.surface,
+        color: AppColors.surfaceHigh,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           side: const BorderSide(color: AppColors.border),
         ),
       ),
@@ -82,9 +127,31 @@ class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.background,
-          minimumSize: const Size(0, 52), // >=44pt touch target
-          textStyle: const TextStyle(fontFamily: _sans, fontSize: 17, fontWeight: FontWeight.w600),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          minimumSize: const Size(0, 52),
+          textStyle: const TextStyle(
+            fontFamily: _sans,
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surfaceHigh,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
       ),
       appBarTheme: const AppBarTheme(
@@ -97,6 +164,16 @@ class AppTheme {
           letterSpacing: 0.5,
           color: AppColors.onSurface,
         ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return AppColors.primary;
+          return AppColors.onSurfaceDim;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return AppColors.primary;
+          return AppColors.surfaceHigh;
+        }),
       ),
     );
   }
