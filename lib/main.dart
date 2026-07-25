@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/background_service.dart';
 import 'core/providers.dart';
-import 'features/home/home_screen.dart';
+import 'features/splash/splash_screen.dart';
 import 'shared/theme/app_theme.dart';
 
 Future<void> main() async {
@@ -30,10 +30,10 @@ class IntervalFitApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'IntervalFit',
+      title: 'Interval Fit',
       theme: AppTheme.dark,
       debugShowCheckedModeBanner: false,
-      home: const HomeScreen(),
+      home: const SplashScreen(),
     );
   }
 }

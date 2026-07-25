@@ -60,7 +60,7 @@ class BackgroundKeepAlive {
         // yang bertahan walau app dibuka ulang).
         foregroundServiceTypes: const [AndroidForegroundType.specialUse],
         notificationChannelId: _channelId,
-        initialNotificationTitle: 'IntervalFit',
+        initialNotificationTitle: 'Interval Fit',
         initialNotificationContent: 'Workout session in progress',
         foregroundServiceNotificationId: _notifId,
       ),

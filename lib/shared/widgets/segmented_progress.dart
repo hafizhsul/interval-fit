@@ -11,6 +11,8 @@ class SegmentedProgress extends StatelessWidget {
     required this.color,
   });
 
+  static const _maxSegments = 20;
+
   final int total;
   final int current;
   final Color color;
@@ -18,6 +20,27 @@ class SegmentedProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (total <= 0) return const SizedBox.shrink();
+
+    if (total > _maxSegments) {
+      return Column(
+        children: [
+          LinearProgressIndicator(
+            value: total > 0 ? (current - 1) / (total - 1) : 0,
+            backgroundColor: AppColors.onSurfaceDim,
+            valueColor: AlwaysStoppedAnimation(color),
+            minHeight: 4,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            '$current / $total',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: AppColors.onSurfaceMute,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      );
+    }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

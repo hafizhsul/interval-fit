@@ -1,5 +1,5 @@
 name: interval_fit
-description: "A new Flutter project."
+description: "Interval timer workout app."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -47,6 +47,7 @@ dependencies:
 
   # Background execution (Phase 5)
   flutter_background_service: ^5.1.0
+  wakelock_plus: ^1.2.0
 
   # SVG rendering for exercise illustrations
   flutter_svg: ^2.0.10+1
@@ -57,13 +58,24 @@ dev_dependencies:
 
   mocktail: ^1.0.4
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^6.0.0
   sqflite_common_ffi: ^2.4.2
+  flutter_launcher_icons: ^0.14.0
+  flutter_native_splash: ^2.4.5
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/launcher-icon.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/images/launcher-icon.png"
+
+flutter_native_splash:
+  color: "#000000"
+  image: assets/images/title-icon-splash.png
+  android_12:
+    image: assets/images/title-icon-splash.png
+    color: "#000000"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -79,6 +91,7 @@ flutter:
   assets:
     - assets/audio/
     - assets/svg/
+    - assets/images/
 
   fonts:
     - family: Barlow

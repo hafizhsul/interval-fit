@@ -34,6 +34,8 @@ class ActiveWorkoutController {
       clock: clock,
       onCountdown: (n) => _voice.speakCountdown(n),
       onPhaseChange: _onPhaseChange,
+      onThirtySeconds: _voice.speakThirtySeconds,
+      onComplete: _voice.playCompleteSound,
     );
     _engine.state.addListener(_onState);
   }
@@ -67,7 +69,7 @@ class ActiveWorkoutController {
   void resume() => _engine.resume();
   void skip() => _engine.skip();
 
-  /// Stop manual — simpan progress parsial lalu emit finished.
+  /// Stop manual — simpan progress parsial lalu emit finished (FR-6).
   Future<void> stop() async {
     _engine.stop();
     await _save(completed: false);

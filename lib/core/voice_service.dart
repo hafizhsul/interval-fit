@@ -27,11 +27,21 @@ class FlutterTtsAdapter implements Tts {
 /// Impl produksi: beep pakai audioplayers (nada pendek dari asset).
 /// ponytail: pakai satu asset beep; upgrade ke beda nada per fase kalau diminta.
 class AudioPlayerBeep implements BeepPlayer {
-  AudioPlayerBeep([AudioPlayer? player]) : _player = player ?? AudioPlayer();
+  AudioPlayerBeep([AudioPlayer? player]) : _player = player ?? AudioPlayer() {
+    _player.setAudioContext(_audioDuck);
+  }
   final AudioPlayer _player;
   @override
   Future<void> beep() => _player.play(AssetSource('audio/beep.wav'));
 }
+
+final _audioDuck = AudioContext(
+  android: AudioContextAndroid(
+    audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+    usageType: AndroidUsageType.voiceCommunication,
+    contentType: AndroidContentType.speech,
+  ),
+);
 
 /// Voice service — cue suara untuk countdown & transisi fase.
 /// Logic terpisah dari UI (unit-testable). Wired ke callback TimerEngine
@@ -60,6 +70,10 @@ class VoiceService {
   }
 
   Future<void> speakCountdown(int n) => _say(n.toString());
+
+  Future<void> speakThirtySeconds() => _say('30 seconds remaining');
+
+  Future<void> playCompleteSound() => _beep.beep();
 
   Future<void> speakPhaseCue(WorkoutPhase phase) {
     final text = _cueFor(phase);

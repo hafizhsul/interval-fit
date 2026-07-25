@@ -11,3 +11,10 @@ String shortDuration(int seconds) {
   if (seconds >= 60 && seconds % 60 == 0) return '${seconds ~/ 60}m';
   return '${seconds}s';
 }
+
+String formatTotalEstimate(int sets, int work, int rest, int warmup, int cooldown) {
+  final total = warmup + cooldown + sets * (work + rest);
+  final m = total ~/ 60;
+  final s = total % 60;
+  return m > 0 ? '$m min $s sec' : '$s sec';
+}

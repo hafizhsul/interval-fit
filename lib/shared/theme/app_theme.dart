@@ -14,15 +14,15 @@ class AppColors {
   static const Color onSurfaceDim = Color(0xFF48484A);
 
   static const Color primary = Color(0xFFFF6B35);
-  static const Color work = Color(0xFFFF3B30);
+  static const Color work = Color(0xFFFF6B35);
   static const Color rest = Color(0xFF0A84FF);
   static const Color warmup = Color(0xFFFFD60A);
-  static const Color cooldown = Color(0xFF30D158);
-  static const Color done = Color(0xFF30D158);
+  static const Color cooldown = Color(0xFF5AC8FA);
+  static const Color done = Color(0xFFFF6B35);
   static const Color destructive = Color(0xFFFF453A);
 
   static const Color muted = onSurfaceMute;
-  static const Color accent = done;
+  static const Color accent = primary;
 }
 
 class AppTheme {
@@ -36,8 +36,12 @@ class AppTheme {
     final scheme = base.colorScheme.copyWith(
       primary: AppColors.primary,
       onPrimary: AppColors.background,
-      secondary: AppColors.done,
-      surface: AppColors.surfaceHigh,
+      primaryContainer: AppColors.surfaceHigh,
+      secondary: AppColors.rest,
+      surface: AppColors.surface,
+      surfaceBright: AppColors.surface,
+      surfaceContainer: AppColors.surfaceHigh,
+      surfaceContainerHighest: AppColors.surfaceHigh,
       onSurface: AppColors.onSurface,
       outline: AppColors.border,
     );

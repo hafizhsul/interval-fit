@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../design/tokens.dart';
 
@@ -31,16 +30,16 @@ class _ExerciseHeroState extends State<ExerciseHero> {
     }
   }
 
-  String get _asset {
+  String get _assetPath {
     switch (widget.exerciseType) {
       case 'skipping':
-        return 'assets/svg/skipping.svg';
+        return 'assets/images/skipping.png';
       case 'walk':
-        return 'assets/svg/walk.svg';
+        return 'assets/images/walk.png';
       case 'run':
-        return 'assets/svg/run.svg';
+        return 'assets/images/run.png';
       default:
-        return 'assets/svg/custom.svg';
+        return 'assets/images/custom.png';
     }
   }
 
@@ -50,11 +49,11 @@ class _ExerciseHeroState extends State<ExerciseHero> {
       duration: AppMotion.normal,
       curve: AppMotion.easing,
       transform: Matrix4.translationValues(0, _parallaxY, 0),
-      child: SvgPicture.asset(
-        _asset,
+      child: Image.asset(
+        _assetPath,
         width: 120,
         height: 120,
-        colorFilter: ColorFilter.mode(widget.color, BlendMode.srcIn),
+        fit: BoxFit.contain,
       ),
     );
   }

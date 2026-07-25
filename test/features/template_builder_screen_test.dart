@@ -31,8 +31,8 @@ void main() {
   testWidgets('validation blocks empty name — no save', (tester) async {
     final repo = await pump(tester);
     // Leave name empty (default is empty), tap Save.
-    await tester.ensureVisible(find.text('Save'));
-    await tester.tap(find.text('Save'));
+    await tester.ensureVisible(find.text('Save Template'));
+    await tester.tap(find.text('Save Template'));
     await tester.pump();
 
     expect(find.text('Name is required'), findsOneWidget);
@@ -42,10 +42,10 @@ void main() {
   testWidgets('converts minutes to seconds on save', (tester) async {
     final repo = await pump(tester);
 
-    await tester.enterText(find.widgetWithText(TextFormField, 'Name'), 'Test');
+    await tester.enterText(find.byType(TextFormField).first, 'Test');
 
     // Work = 2 with unit minutes -> should become 120 seconds.
-    final workField = find.widgetWithText(TextFormField, 'Work');
+    final workField = find.byType(TextFormField).at(1);
     await tester.enterText(workField, '2');
     // Open the first unit dropdown (Work) and pick minutes.
     await tester.tap(find.text('sec').first);
@@ -53,8 +53,8 @@ void main() {
     await tester.tap(find.text('min').last);
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Save'));
-    await tester.tap(find.text('Save'));
+    await tester.ensureVisible(find.text('Save Template'));
+    await tester.tap(find.text('Save Template'));
     await tester.pumpAndSettle();
 
     final captured = verify(() => repo.create(captureAny())).captured;
@@ -68,17 +68,17 @@ void main() {
       (tester) async {
     final repo = await pump(tester);
 
-    await tester.enterText(find.widgetWithText(TextFormField, 'Name'), 'Test');
+    await tester.enterText(find.byType(TextFormField).first, 'Test');
 
-    final workField = find.widgetWithText(TextFormField, 'Work');
+    final workField = find.byType(TextFormField).at(1);
     await tester.enterText(workField, '1,2');
     await tester.tap(find.text('sec').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('min').last);
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Save'));
-    await tester.tap(find.text('Save'));
+    await tester.ensureVisible(find.text('Save Template'));
+    await tester.tap(find.text('Save Template'));
     await tester.pumpAndSettle();
 
     final saved = verify(() => repo.create(captureAny())).captured.first

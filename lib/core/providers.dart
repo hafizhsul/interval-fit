@@ -46,6 +46,10 @@ final templateListProvider =
   return ref.watch(templateRepositoryProvider).getAll();
 });
 
+/// Increment to signal that a workout session was saved (FR-6).
+/// History & Stats providers watch this so they re-fetch after workout.
+final workoutRefreshTrigger = StateProvider<int>((ref) => 0);
+
 /// Bootstrap: buka DB + prefs, kembalikan overrides untuk ProviderScope.
 Future<List<Override>> bootstrapOverrides() async {
   final db = await AppDatabase.instance();

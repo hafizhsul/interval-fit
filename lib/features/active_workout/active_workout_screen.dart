@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/providers.dart';
 import '../../core/timer_engine.dart';
@@ -13,6 +14,7 @@ import '../../shared/widgets/phase_pill.dart';
 import '../../shared/widgets/phase_progress_ring.dart';
 import '../../shared/widgets/segmented_progress.dart';
 import 'active_workout_controller.dart';
+import 'workout_result_dialog.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   const ActiveWorkoutScreen({super.key, required this.template});
@@ -30,6 +32,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   @override
   void initState() {
     super.initState();
+    WakelockPlus.enable();
     _controller = ActiveWorkoutController(
       template: widget.template,
       voice: ref.read(voiceServiceProvider),
@@ -45,13 +48,14 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       _popped = true;
       final save = _controller.saveFuture;
       (save ?? Future<void>.value()).whenComplete(() {
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) _showResult();
       });
     }
   }
 
   @override
   void dispose() {
+    WakelockPlus.disable();
     _controller.state.removeListener(_onState);
     _controller.dispose();
     super.dispose();
@@ -59,7 +63,32 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
   Future<void> _stop() async {
     await _controller.stop();
-    if (mounted) Navigator.of(context).pop();
+    if (mounted) _showResult();
+  }
+
+  void _showResult() {
+    final s = _controller.state.value;
+    // Calculate sets completed (same logic as ActiveWorkoutController._doSave).
+    final isComplete = s.phase == WorkoutPhase.done;
+    final setsDone = isComplete
+        ? widget.template.sets
+        : (s.phase == WorkoutPhase.rest
+            ? s.currentSet
+            : (s.currentSet > 0 ? s.currentSet - 1 : 0));
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => WorkoutResultDialog(
+        templateName: widget.template.name,
+        exerciseType: widget.template.exerciseType,
+        durationSeconds: s.totalElapsedSeconds,
+        setsCompleted: setsDone,
+        setsPlanned: widget.template.sets,
+        completed: isComplete,
+      ),
+    ).then((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
   }
 
   @override
@@ -97,6 +126,15 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                         color: AppColors.onSurfaceMute,
                         letterSpacing: 2,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (showSegmented) ...<Widget>[
+                    const SizedBox(height: AppSpacing.lg),
+                    SegmentedProgress(
+                      total: s.totalSets,
+                      current: s.currentSet,
+                      color: phaseColor,
                     ),
                   ],
                   Expanded(
@@ -121,19 +159,16 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                                 ),
                     ),
                   ),
-                  if (showSegmented) ...<Widget>[
+                  if (!isDone) ...<Widget>[
+                    Text(
+                      formatMmSs(s.totalElapsedSeconds),
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        color: AppColors.onSurfaceMute,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.lg),
-                    SegmentedProgress(
-                      total: s.totalSets,
-                      current: s.currentSet,
-                      color: phaseColor,
-                    ),
+                    _controls(isPaused, phaseColor),
                   ],
-                  if (!isDone)
-                    Padding(
-                      padding: const EdgeInsets.only(top: AppSpacing.lg),
-                      child: _controls(isPaused, phaseColor),
-                    ),
                 ],
               ),
             ),

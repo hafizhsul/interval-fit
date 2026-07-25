@@ -130,7 +130,9 @@ class TimerEngine {
     ElapsedClock? clock,
     this.tickInterval = const Duration(milliseconds: 80),
     this.onCountdown,
+    this.onThirtySeconds,
     this.onPhaseChange,
+    this.onComplete,
     bool dropLastRest = true,
   }) : _clock = clock ?? StopwatchClock(),
        _segments = _buildSegments(config, dropLastRest),
@@ -155,6 +157,12 @@ class TimerEngine {
   /// Dipanggil tepat sekali saat sisa fase melewati 3, 2, 1 detik.
   final void Function(int secondsLeft)? onCountdown;
 
+  /// Dipanggil tepat sekali saat sisa fase melewati 30 detik (reminder).
+  final void Function()? onThirtySeconds;
+
+  /// Dipanggil tepat sekali saat sesi selesai (semua fase habis).
+  final void Function()? onComplete;
+
   /// Dipanggil saat transisi fase (untuk cue "istirahat"/"mulai").
   final void Function(WorkoutPhase from, WorkoutPhase to)? onPhaseChange;
 
@@ -167,6 +175,7 @@ class TimerEngine {
   // di-reset ke `now`, tapi ditambah durasi segmen -> drift tidak akumulasi.
   int _segmentStartMs = 0;
   final Set<int> _countdownFired = {};
+  final Set<int> _thirtyFired = {};
 
   static List<_Segment> _buildSegments(WorkoutConfig c, bool dropLastRest) {
     final segs = <_Segment>[];
@@ -243,6 +252,7 @@ class TimerEngine {
     _segmentStartMs += _segments[_index].seconds * 1000;
     _index++;
     _countdownFired.clear();
+    _thirtyFired.clear();
     if (_index >= _segments.length) {
       _ticker?.cancel();
       _ticker = null;
@@ -254,6 +264,7 @@ class TimerEngine {
         phaseRemainingSeconds: 0,
       );
       onPhaseChange?.call(prev, WorkoutPhase.done);
+      onComplete?.call();
       return false;
     }
     onPhaseChange?.call(prev, _segments[_index].phase);
@@ -284,6 +295,11 @@ class TimerEngine {
         if (remainingMs <= n * 1000 && _countdownFired.add(n)) {
           onCountdown?.call(n);
         }
+      }
+
+      // 30-second reminder during work phase only.
+      if (remainingMs <= 30 * 1000 && _thirtyFired.add(seg.seconds) && seg.phase == WorkoutPhase.work) {
+        onThirtySeconds?.call();
       }
 
       _state.value = _state.value._copy(
