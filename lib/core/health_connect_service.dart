@@ -90,7 +90,10 @@ class HealthConnectService {
   Future<void> syncToday() async {
     final records = await fetchToday();
     if (records.isEmpty) return;
-    await _repository.deleteAll();
+    final now = DateTime.now();
+    final dayStart = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
+    final dayEnd = dayStart + (24 * 60 * 60 * 1000);
+    await _repository.deleteByDateRange(dayStart, dayEnd);
     await _repository.bulkInsert(records);
   }
 

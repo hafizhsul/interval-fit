@@ -40,5 +40,14 @@ class HealthRepository {
     await batch.commit(noResult: true);
   }
 
+  /// Delete all records within [startMs]..[endMs] (millisecond epoch).
+  Future<void> deleteByDateRange(int startMs, int endMs) async {
+    await _db.delete(
+      _table,
+      where: 'start_time >= ? AND end_time <= ?',
+      whereArgs: [startMs, endMs],
+    );
+  }
+
   Future<void> deleteAll() => _db.delete(_table);
 }
