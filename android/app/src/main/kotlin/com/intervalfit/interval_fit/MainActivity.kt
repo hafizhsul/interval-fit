@@ -1,6 +1,7 @@
 package com.intervalfit.interval_fit
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
@@ -14,6 +15,7 @@ class MainActivity : FlutterActivity() {
     // foreground service. Tanpa izin, startForeground crash native
     // (CannotPostForegroundServiceNotificationException) — tak bisa di-catch dari Dart.
     private val channel = "intervalfit/notifications"
+    private val batteryChannel = "intervalfit/battery"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -29,6 +31,19 @@ class MainActivity : FlutterActivity() {
                                 1,
                             )
                         }
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, batteryChannel)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "requestBattery" -> {
+                        val intent = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = android.net.Uri.parse("package:${context.packageName}")
+                        }
+                        startActivity(intent)
                         result.success(null)
                     }
                     else -> result.notImplemented()

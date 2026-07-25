@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/providers.dart';
+import '../../core/battery_hint.dart';
 import '../../shared/design/tokens.dart';
 import '../../shared/theme/app_theme.dart';
 
@@ -76,6 +77,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               },
               activeThumbColor: AppColors.primary,
               activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Card(
+            margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+            elevation: 0,
+            color: AppColors.surfaceHigh,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              side: const BorderSide(color: AppColors.border),
+            ),
+            child: ListTile(
+              leading: Icon(Icons.battery_std, color: AppColors.onSurfaceMute, size: 24),
+              title: Text('Battery Optimization',
+                  style: Theme.of(context).textTheme.titleLarge),
+              subtitle: Text('Keep timer running when phone is locked',
+                  style: Theme.of(context).textTheme.bodyMedium),
+              trailing: const Icon(Icons.chevron_right,
+                  color: AppColors.onSurfaceMute, size: 20),
+              onTap: requestBatteryOptimizationExemption,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
                 vertical: AppSpacing.sm,
