@@ -91,7 +91,6 @@ class ActiveWorkoutController {
   /// Save current progress without stopping the engine.
   /// Called when app lifecycle indicates potential termination.
   Future<void> saveProgress() async {
-    if (_saveFuture != null) return;
     final s = _engine.state.value;
     if (s.phase == WorkoutPhase.done) return;
     final setsCompleted = s.phase == WorkoutPhase.rest
