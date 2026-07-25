@@ -9,6 +9,7 @@ class HealthConnectService {
   final HealthRepository _repository;
   final Health _health = Health();
   bool _configured = false;
+  bool _permissionGranted = false;
 
   Future<bool> _ensureConfigured() async {
     if (_configured) return true;
@@ -30,6 +31,8 @@ class HealthConnectService {
     }
   }
 
+  Future<bool> hasPermission() async => _permissionGranted;
+
   Future<bool> requestPermissions() async {
     if (!await _ensureConfigured()) return false;
     try {
@@ -38,6 +41,7 @@ class HealthConnectService {
         HealthDataType.HEART_RATE,
         HealthDataType.ACTIVE_ENERGY_BURNED,
       ]);
+      _permissionGranted = true;
       return true;
     } catch (_) {
       return false;
@@ -112,8 +116,18 @@ class HealthConnectService {
 
   static Map<String, double> _aggregate(List<HealthData> records) {
     final map = <String, double>{};
+    final counts = <String, int>{};
     for (final r in records) {
-      map[r.type.name] = r.value;
+      if (r.type == HealthRecordType.steps ||
+          r.type == HealthRecordType.activeEnergyBurned) {
+        map[r.type.name] = (map[r.type.name] ?? 0) + r.value;
+      } else {
+        map[r.type.name] = (map[r.type.name] ?? 0) + r.value;
+        counts[r.type.name] = (counts[r.type.name] ?? 0) + 1;
+      }
+    }
+    for (final key in counts.keys) {
+      map[key] = map[key]! / counts[key]!;
     }
     return map;
   }

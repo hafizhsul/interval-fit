@@ -27,30 +27,78 @@ class HealthScreen extends ConsumerWidget {
           ),
         ),
       ),
-      body: FutureBuilder<bool>(
-        future: service.isAvailable(),
+      body: FutureBuilder<String>(
+        future: _computeScreenState(service),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snap.data != true) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.info_outline, size: 48, color: AppColors.onSurfaceMute),
-                  const SizedBox(height: AppSpacing.md),
-                  Text('Health Connect not installed',
-                      style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text('Install Google Health Connect to sync your activity data.',
-                      style: Theme.of(context).textTheme.bodyMedium),
-                ],
-              ),
-            );
+          switch (snap.data) {
+            case 'notAvailable':
+              return _notAvailableView(context);
+            case 'noPermission':
+              return _noPermissionView(context, service, ref);
+            default:
+              return _healthDataView(context, ref, service);
           }
-          return _healthDataView(context, ref, service);
         },
+      ),
+    );
+  }
+
+  Future<String> _computeScreenState(HealthConnectService service) async {
+    if (!await service.isAvailable()) return 'notAvailable';
+    if (!await service.hasPermission()) return 'noPermission';
+    return 'ready';
+  }
+
+  Widget _notAvailableView(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.info_outline, size: 48, color: AppColors.onSurfaceMute),
+          const SizedBox(height: AppSpacing.md),
+          Text('Health Connect not installed',
+              style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: AppSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text(
+              'Install Google Health Connect from Google Play Store to sync your activity data.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _noPermissionView(BuildContext context, HealthConnectService service, WidgetRef ref) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.shield_outlined, size: 48, color: AppColors.onSurfaceMute),
+          const SizedBox(height: AppSpacing.md),
+          Text('Permission required',
+              style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Grant Health Connect permission to sync your activity data.',
+            style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: AppSpacing.lg),
+          FilledButton.icon(
+            onPressed: () async {
+              await service.requestPermissions();
+              if (context.mounted) {
+                ref.invalidate(healthConnectServiceProvider);
+              }
+            },
+            icon: const Icon(Icons.check_circle_outline),
+            label: const Text('Grant permissions'),
+          ),
+        ],
       ),
     );
   }

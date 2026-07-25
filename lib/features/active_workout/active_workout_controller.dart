@@ -88,9 +88,15 @@ class ActiveWorkoutController {
     }
   }
 
+  /// Guard against rapid duplicate saves from lifecycle events (lock/unlock).
+  int _lastSaveProgressMs = 0;
+
   /// Save current progress without stopping the engine.
   /// Called when app lifecycle indicates potential termination.
   Future<void> saveProgress() async {
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    if (nowMs - _lastSaveProgressMs < 5000) return;
+    _lastSaveProgressMs = nowMs;
     final s = _engine.state.value;
     if (s.phase == WorkoutPhase.done) return;
     final setsCompleted = s.phase == WorkoutPhase.rest

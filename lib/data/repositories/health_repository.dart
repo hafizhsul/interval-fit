@@ -11,8 +11,8 @@ class HealthRepository {
   Future<List<HealthData>> getByDateRange(int startMs, int endMs) async {
     final rows = await _db.query(
       _table,
-      where: 'start_time >= ? AND end_time <= ?',
-      whereArgs: [startMs, endMs],
+      where: 'start_time < ? AND end_time > ?',
+      whereArgs: [endMs, startMs],
       orderBy: 'start_time ASC',
     );
     return rows.map(HealthData.fromMap).toList();
@@ -40,12 +40,12 @@ class HealthRepository {
     await batch.commit(noResult: true);
   }
 
-  /// Delete all records within [startMs]..[endMs] (millisecond epoch).
+  /// Delete all records that overlap [startMs]..[endMs] (millisecond epoch).
   Future<void> deleteByDateRange(int startMs, int endMs) async {
     await _db.delete(
       _table,
-      where: 'start_time >= ? AND end_time <= ?',
-      whereArgs: [startMs, endMs],
+      where: 'start_time < ? AND end_time > ?',
+      whereArgs: [endMs, startMs],
     );
   }
 

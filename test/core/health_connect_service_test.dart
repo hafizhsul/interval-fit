@@ -109,6 +109,7 @@ void main() {
       final dayStart = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
       final dayEnd = dayStart + (24 * 60 * 60 * 1000);
       verify(() => repo.deleteByDateRange(dayStart, dayEnd)).called(1);
+      verify(() => repo.bulkInsert(any())).called(1);
     });
   });
 
