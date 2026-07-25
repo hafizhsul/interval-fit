@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../data/models/health_data.dart';
+import '../../data/models/health_data.dart';
 import '../../shared/design/tokens.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../core/providers.dart';
+import '../../core/health_connect_service.dart';
 
 class HealthScreen extends ConsumerWidget {
   const HealthScreen({super.key});
@@ -12,7 +13,6 @@ class HealthScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final service = ref.watch(healthConnectServiceProvider);
-    final agg = service.getTodayAggregated();
 
     return Scaffold(
       appBar: AppBar(
@@ -27,53 +27,82 @@ class HealthScreen extends ConsumerWidget {
           ),
         ),
       ),
-      body: FutureBuilder<Map<String, double>>(
-        future: agg,
-        builder: (context, snapshot) {
-          final data = snapshot.data ?? const {};
-          final steps = data[HealthRecordType.steps.name] ?? 0;
-          final heartRate = data[HealthRecordType.heartRate.name] ?? 0;
-          final calories =
-              data[HealthRecordType.activeEnergyBurned.name] ?? 0;
-
-          return ListView(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            children: [
-              _StatCard(
-                title: 'Steps',
-                value: '${steps.toInt()}',
-                unit: 'steps',
-                icon: Icons.directions_walk,
+      body: FutureBuilder<bool>(
+        future: service.isAvailable(),
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snap.data != true) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.info_outline, size: 48, color: AppColors.onSurfaceMute),
+                  const SizedBox(height: AppSpacing.md),
+                  Text('Health Connect not installed',
+                      style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text('Install Google Health Connect to sync your activity data.',
+                      style: Theme.of(context).textTheme.bodyMedium),
+                ],
               ),
-              const SizedBox(height: AppSpacing.sm),
-              _StatCard(
-                title: 'Heart Rate',
-                value: heartRate == 0 ? '—' : '${heartRate.toInt()}',
-                unit: 'bpm',
-                icon: Icons.monitor_heart,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _StatCard(
-                title: 'Calories',
-                value: '${calories.toInt()}',
-                unit: 'kcal',
-                icon: Icons.local_fire_department,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              FilledButton.icon(
-                onPressed: () async {
-                  await service.syncToday();
-                  if (context.mounted) {
-                    ref.invalidate(healthConnectServiceProvider);
-                  }
-                },
-                icon: const Icon(Icons.sync),
-                label: const Text('Sync Now'),
-              ),
-            ],
-          );
+            );
+          }
+          return _healthDataView(context, ref, service);
         },
       ),
+    );
+  }
+
+  Widget _healthDataView(BuildContext context, WidgetRef ref, HealthConnectService service) {
+    final agg = service.getTodayAggregated();
+    return FutureBuilder<Map<String, double>>(
+      future: agg,
+      builder: (context, snapshot) {
+        final data = snapshot.data ?? const {};
+        final steps = data[HealthRecordType.steps.name] ?? 0;
+        final heartRate = data[HealthRecordType.heartRate.name] ?? 0;
+        final calories =
+            data[HealthRecordType.activeEnergyBurned.name] ?? 0;
+
+        return ListView(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          children: [
+            _StatCard(
+              title: 'Steps',
+              value: '${steps.toInt()}',
+              unit: 'steps',
+              icon: Icons.directions_walk,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _StatCard(
+              title: 'Heart Rate',
+              value: heartRate == 0 ? '—' : '${heartRate.toInt()}',
+              unit: 'bpm',
+              icon: Icons.monitor_heart,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _StatCard(
+              title: 'Calories',
+              value: '${calories.toInt()}',
+              unit: 'kcal',
+              icon: Icons.local_fire_department,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton.icon(
+              onPressed: () async {
+                await service.syncToday();
+                if (context.mounted) {
+                  ref.invalidate(healthConnectServiceProvider);
+                }
+              },
+              icon: const Icon(Icons.sync),
+              label: const Text('Sync Now'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
