@@ -8,7 +8,7 @@ class AppDatabase {
   AppDatabase._();
 
   static const String dbName = 'interval_fit.db';
-  static const int dbVersion = 1;
+  static const int dbVersion = 2;
 
   static Database? _instance;
 
@@ -23,14 +23,32 @@ class AppDatabase {
   /// Buka DB di [path] ('' atau [inMemoryDatabasePath] untuk test).
   /// Memakai [databaseFactory] aktif — test bisa set databaseFactoryFfi.
   static Future<Database> open(String path) => openDatabase(
-    path,
-    version: dbVersion,
-    onConfigure: _onConfigure,
-    onCreate: _onCreate,
-  );
+        path,
+        version: dbVersion,
+        onConfigure: _onConfigure,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+      );
 
   static Future<void> _onConfigure(Database db) async {
     await db.execute('PRAGMA foreign_keys = ON');
+  }
+
+  static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS health_data (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          record_type TEXT NOT NULL,
+          value REAL NOT NULL,
+          unit TEXT NOT NULL,
+          start_time INTEGER NOT NULL,
+          end_time INTEGER NOT NULL,
+          synced_at INTEGER NOT NULL,
+          source TEXT
+        )
+      ''');
+    }
   }
 
   static Future<void> _onCreate(Database db, int version) async {

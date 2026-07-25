@@ -120,6 +120,102 @@ Color? _tintFor(String exerciseType) {
   }
 }
 
+Future<void> _showDetail(
+  BuildContext context,
+  WorkoutSession session,
+) async {
+  await showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      backgroundColor: AppColors.surfaceHigh,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      title: Text(
+        session.templateName,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _DetailRow(label: 'Date', value: _formatDate(session.startedAt)),
+            const SizedBox(height: 8),
+            _DetailRow(label: 'Exercise', value: session.exerciseType),
+            const SizedBox(height: 8),
+            _DetailRow(label: 'Sets', value: '${session.setsCompleted}/${session.setsPlanned}'),
+            const SizedBox(height: 8),
+            _DetailRow(label: 'Duration', value: formatMmSs(session.durationSeconds)),
+            const SizedBox(height: 8),
+            _DetailRow(
+              label: 'Status',
+              value: session.completed ? 'Completed' : 'Stopped',
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  session.completed ? Icons.check_circle : Icons.cancel,
+                  size: 16,
+                  color: session.completed ? AppColors.done : AppColors.work,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  session.completed
+                      ? 'Session completed'
+                      : 'Session stopped early',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: session.completed ? AppColors.done : AppColors.work,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    ),
+  );
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.onSurfaceMute,
+                ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SessionTile extends ConsumerWidget {
   const _SessionTile({required this.session});
 
@@ -140,7 +236,7 @@ class _SessionTile extends ConsumerWidget {
         side: const BorderSide(color: AppColors.border),
       ),
       child: InkWell(
-        onTap: () {},
+        onTap: () => _showDetail(context, session),
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
