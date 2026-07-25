@@ -129,6 +129,41 @@ void main() {
     c.dispose();
   });
 
+  test('saveProgress simpan parsial tanpa hentikan engine', () async {
+    final c = build();
+    c.start();
+    // lewati getReady -> work set 1
+    c.skip();
+    expect(c.state.value.phase, WorkoutPhase.work);
+    expect(c.saveFuture, isNull);
+    await c.saveProgress();
+
+    final captured =
+        verify(() => history.insertSession(captureAny())).captured;
+    final s = captured.first as WorkoutSession;
+    expect(s.completed, false);
+    expect(s.setsCompleted, 0); // masih di work set 1, belum tuntas
+    expect(c.state.value.phase,
+        WorkoutPhase.work); // engine masih jalan
+    // saveFuture tetap null karena saveProgress tidak menyentuhnya
+    expect(c.saveFuture, isNull);
+    c.dispose();
+  });
+
+  test('saveProgress tidak simpan jika fase done', () async {
+    final c = build();
+    c.start();
+    while (c.state.value.phase != WorkoutPhase.done) {
+      c.skip();
+    }
+    await Future<void>.delayed(Duration.zero);
+    // sudah tersimpan via _onState -> _save; saveProgress di fase done no-op
+    await c.saveProgress();
+    // hanya satu insert dari _onState, saveProgress tidak nambah
+    verify(() => history.insertSession(any())).called(1);
+    c.dispose();
+  });
+
   test('saveFuture await sebelum pop — cegah race pop vs save', () async {
     final c = build();
     c.start();

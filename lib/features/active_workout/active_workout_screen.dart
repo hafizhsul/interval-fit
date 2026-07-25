@@ -28,6 +28,7 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   late final ActiveWorkoutController _controller;
   bool _popped = false;
+  late final AppLifecycleListener _lifecycleListener;
 
   @override
   void initState() {
@@ -40,6 +41,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     );
     _controller.state.addListener(_onState);
     _controller.start();
+    _lifecycleListener = AppLifecycleListener(
+      onPause: () => _controller.saveProgress(),
+      onDetach: () => _controller.saveProgress(),
+    );
   }
 
   void _onState() {
@@ -58,6 +63,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     WakelockPlus.disable();
     _controller.state.removeListener(_onState);
     _controller.dispose();
+    _lifecycleListener.dispose();
     super.dispose();
   }
 

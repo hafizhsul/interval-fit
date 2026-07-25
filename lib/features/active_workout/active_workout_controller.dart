@@ -88,6 +88,27 @@ class ActiveWorkoutController {
     }
   }
 
+  /// Save current progress without stopping the engine.
+  /// Called when app lifecycle indicates potential termination.
+  Future<void> saveProgress() async {
+    if (_saveFuture != null) return;
+    final s = _engine.state.value;
+    if (s.phase == WorkoutPhase.done) return;
+    final setsCompleted = s.phase == WorkoutPhase.rest
+        ? s.currentSet
+        : (s.currentSet > 0 ? s.currentSet - 1 : 0);
+    await _history.insertSession(WorkoutSession(
+      templateId: _template.id,
+      templateName: _template.name,
+      exerciseType: _template.exerciseType,
+      startedAt: _startedAtMs,
+      durationSeconds: s.totalElapsedSeconds,
+      setsPlanned: _template.sets,
+      setsCompleted: setsCompleted,
+      completed: false,
+    ));
+  }
+
   /// Idempoten: pemanggilan kedua return Future yang sama. `_saveFuture` sebagai
   /// guard sekaligus handle yang ditunggu screen sebelum pop (cegah race pop vs save).
   Future<void> _save({required bool completed}) {
