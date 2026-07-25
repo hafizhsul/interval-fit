@@ -7,11 +7,11 @@ import '../../data/models/workout_template.dart';
 import '../../shared/design/tokens.dart';
 import '../../shared/format.dart';
 import '../../shared/theme/app_theme.dart';
-import '../active_workout/active_workout_screen.dart';
 import '../history/history_screen.dart';
 import '../settings/settings_screen.dart';
 import '../stats/stats_screen.dart';
 import '../template_builder/template_builder_screen.dart';
+import 'widgets/workout_confirm_sheet.dart';
 
 class _NavPage {
   const _NavPage(this.label, this.iconPath);
@@ -338,8 +338,13 @@ class _TemplateCard extends ConsumerWidget {
       ),
       child: InkWell(
         onTap: () async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(template: template)),
+          await showModalBottomSheet(
+            context: context,
+            backgroundColor: AppColors.surfaceHigh,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+            ),
+            builder: (_) => WorkoutConfirmSheet(template: template),
           );
           if (!context.mounted) return;
           ref.read(workoutRefreshTrigger.notifier).state++;
