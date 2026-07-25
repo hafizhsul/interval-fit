@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
 import '../../data/models/workout_session.dart';
+import '../../data/models/health_data.dart';
 import '../../shared/design/tokens.dart';
 import '../../shared/format.dart';
 import '../../shared/theme/app_theme.dart';
 
-final _historyProvider =
-    FutureProvider.autoDispose<List<WorkoutSession>>((ref) {
+final _historyProvider = FutureProvider.autoDispose<List<WorkoutSession>>((ref) {
   ref.watch(workoutRefreshTrigger);
   return ref.watch(historyRepositoryProvider).getAll();
 });
@@ -120,102 +120,6 @@ Color? _tintFor(String exerciseType) {
   }
 }
 
-Future<void> _showDetail(
-  BuildContext context,
-  WorkoutSession session,
-) async {
-  await showDialog(
-    context: context,
-    builder: (_) => AlertDialog(
-      backgroundColor: AppColors.surfaceHigh,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      title: Text(
-        session.templateName,
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _DetailRow(label: 'Date', value: _formatDate(session.startedAt)),
-            const SizedBox(height: 8),
-            _DetailRow(label: 'Exercise', value: session.exerciseType),
-            const SizedBox(height: 8),
-            _DetailRow(label: 'Sets', value: '${session.setsCompleted}/${session.setsPlanned}'),
-            const SizedBox(height: 8),
-            _DetailRow(label: 'Duration', value: formatMmSs(session.durationSeconds)),
-            const SizedBox(height: 8),
-            _DetailRow(
-              label: 'Status',
-              value: session.completed ? 'Completed' : 'Stopped',
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(
-                  session.completed ? Icons.check_circle : Icons.cancel,
-                  size: 16,
-                  color: session.completed ? AppColors.done : AppColors.work,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  session.completed
-                      ? 'Session completed'
-                      : 'Session stopped early',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: session.completed ? AppColors.done : AppColors.work,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Close'),
-        ),
-      ],
-    ),
-  );
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.onSurfaceMute,
-                ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _SessionTile extends ConsumerWidget {
   const _SessionTile({required this.session});
 
@@ -236,7 +140,7 @@ class _SessionTile extends ConsumerWidget {
         side: const BorderSide(color: AppColors.border),
       ),
       child: InkWell(
-        onTap: () => _showDetail(context, session),
+        onTap: () => _showDetail(context, ref, session),
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -285,6 +189,146 @@ class _SessionTile extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+Future<void> _showDetail(
+  BuildContext context,
+  WidgetRef ref,
+  WorkoutSession session,
+) async {
+  final healthForDate = ref.watch(
+    healthForDateProvider(session.startedAt).future,
+  );
+
+  await showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      backgroundColor: AppColors.surfaceHigh,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      title: Text(
+        session.templateName,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _DetailRow(label: 'Date', value: _formatDate(session.startedAt)),
+            const SizedBox(height: 8),
+            _DetailRow(label: 'Exercise', value: session.exerciseType),
+            const SizedBox(height: 8),
+            _DetailRow(
+              label: 'Sets',
+              value: '${session.setsCompleted}/${session.setsPlanned}',
+            ),
+            const SizedBox(height: 8),
+            _DetailRow(
+              label: 'Duration',
+              value: formatMmSs(session.durationSeconds),
+            ),
+            const SizedBox(height: 8),
+            _DetailRow(
+              label: 'Status',
+              value: session.completed ? 'Completed' : 'Stopped',
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  session.completed ? Icons.check_circle : Icons.cancel,
+                  size: 16,
+                  color: session.completed ? AppColors.done : AppColors.work,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  session.completed ? 'Session completed' : 'Session stopped early',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: session.completed ? AppColors.done : AppColors.work,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Health Data',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            FutureBuilder<Map<String, double>>(
+              future: healthForDate,
+              builder: (context, snapshot) {
+                final data = snapshot.data ?? const {};
+                final steps = data[HealthRecordType.steps.name] ?? 0;
+                final heartRate = data[HealthRecordType.heartRate.name] ?? 0;
+                final calories =
+                    data[HealthRecordType.activeEnergyBurned.name] ?? 0;
+
+                return Column(
+                  children: [
+                    _DetailRow(
+                      label: 'Steps',
+                      value: steps == 0 ? '—' : '${steps.toInt()}',
+                    ),
+                    const SizedBox(height: 6),
+                    _DetailRow(
+                      label: 'Heart Rate',
+                      value: heartRate == 0 ? '—' : '${heartRate.toInt()} bpm',
+                    ),
+                    const SizedBox(height: 6),
+                    _DetailRow(
+                      label: 'Calories',
+                      value: calories == 0 ? '—' : '${calories.toInt()} kcal',
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    ),
+  );
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.onSurfaceMute,
+                ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+      ],
     );
   }
 }

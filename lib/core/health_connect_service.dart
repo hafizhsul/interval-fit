@@ -23,15 +23,24 @@ class HealthConnectService {
 
   /// Get today's aggregated stats from local DB.
   Future<Map<String, double>> getTodayAggregated() async {
-    try {
-      final today = await _repository.getToday();
-      final map = <String, double>{};
-      for (final r in today) {
-        map[r.type.name] = r.value;
-      }
-      return map;
-    } catch (_) {
-      return const {};
+    final today = await _repository.getToday();
+    return _aggregate(today);
+  }
+
+  /// Get aggregated stats for a specific day (epoch ms).
+  Future<Map<String, double>> getForDate(int epochMs) async {
+    final start = DateTime.fromMillisecondsSinceEpoch(epochMs);
+    final dayStart = DateTime(start.year, start.month, start.day).millisecondsSinceEpoch;
+    final dayEnd = dayStart + (24 * 60 * 60 * 1000);
+    final records = await _repository.getByDateRange(dayStart, dayEnd);
+    return _aggregate(records);
+  }
+
+  static Map<String, double> _aggregate(List<HealthData> records) {
+    final map = <String, double>{};
+    for (final r in records) {
+      map[r.type.name] = r.value;
     }
+    return map;
   }
 }

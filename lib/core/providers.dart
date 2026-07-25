@@ -53,6 +53,13 @@ final healthConnectServiceProvider = Provider<HealthConnectService>(
 /// Trigger a health data refresh.
 final healthRefreshTrigger = StateProvider<int>((ref) => 0);
 
+final healthForDateProvider = FutureProvider.family<Map<String, double>, int>(
+  (ref, epochMs) {
+    final service = ref.watch(healthConnectServiceProvider);
+    return service.getForDate(epochMs);
+  },
+);
+
 /// Daftar template untuk home. Auto-refresh via [refresh].
 final templateListProvider =
     FutureProvider.autoDispose<List<WorkoutTemplate>>((ref) {
