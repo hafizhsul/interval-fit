@@ -15,18 +15,6 @@ class HealthScreen extends ConsumerWidget {
     final service = ref.watch(healthConnectServiceProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Health Connect',
-          style: TextStyle(
-            fontFamily: 'BarlowCondensed',
-            fontSize: 26,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-            color: AppColors.onSurface,
-          ),
-        ),
-      ),
       body: FutureBuilder<String>(
         future: _computeScreenState(service),
         builder: (context, snap) {
@@ -115,8 +103,37 @@ class HealthScreen extends ConsumerWidget {
             data[HealthRecordType.activeEnergyBurned.name] ?? 0;
 
         return ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: EdgeInsets.zero,
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.sm,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Health Connect',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.onSurface),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Today\'s activity and health metrics',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(color: AppColors.onSurfaceMute),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
             _StatCard(
               title: 'Steps',
               value: '${steps.toInt()}',

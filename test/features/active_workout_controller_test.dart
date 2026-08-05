@@ -13,6 +13,8 @@ class _FakeTts implements Tts {
   @override
   Future<void> speak(String text) async => spoken.add(text);
   @override
+  Future<void> stop() async {}
+  @override
   Future<void> initLocale() async {}
 }
 

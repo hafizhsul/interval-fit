@@ -7,6 +7,7 @@ import '../../data/models/workout_template.dart';
 import '../../shared/design/tokens.dart';
 import '../../shared/format.dart';
 import '../../shared/theme/app_theme.dart';
+import '../health/health_screen.dart';
 import '../history/history_screen.dart';
 import '../settings/settings_screen.dart';
 import '../stats/stats_screen.dart';
@@ -23,7 +24,7 @@ const _navPages = [
   _NavPage('Home', 'assets/svg/home.svg'),
   _NavPage('History', 'assets/svg/history.svg'),
   _NavPage('Stats', 'assets/svg/stats.svg'),
-  _NavPage('Settings', 'assets/svg/settings.svg'),
+  _NavPage('Health', 'assets/svg/heart.svg'),
 ];
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -40,12 +41,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: false,
+        titleSpacing: 16,
         title: Image.asset(
           'assets/images/title-logo.png',
           width: 120,
           height: 32,
           fit: BoxFit.contain,
         ),
+        actions: [
+          IconButton(
+            icon: SvgPicture.asset(
+              'assets/svg/settings.svg',
+              width: 24,
+              height: 24,
+              colorFilter: const ColorFilter.mode(AppColors.onSurface, BlendMode.srcIn),
+            ),
+            onPressed: () {
+              if (context.mounted) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+              }
+            },
+            tooltip: 'Settings',
+          ),
+        ],
       ),
     body: IndexedStack(
       index: _index,
@@ -53,7 +74,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _HomeList(),
         _HistoryPage(),
         _StatsPage(),
-        _SettingsPage(),
+        _HealthPage(),
       ],
     ),
     floatingActionButton: _CenterCreateButton(
@@ -71,38 +92,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     shape: const CircularNotchedRectangle(),
     child: SizedBox(
       height: 72,
-      child: Row(
-        children: [
-          Expanded(
-            child: _NavBarButton(
-              iconPath: _navPages[0].iconPath,
-              selected: _index == 0,
-              onTap: () => setState(() => _index = 0),
-            ),
-          ),
-          Expanded(
-            child: _NavBarButton(
-              iconPath: _navPages[1].iconPath,
-              selected: _index == 1,
-              onTap: () => setState(() => _index = 1),
-            ),
-          ),
-          const SizedBox(width: 72),
-          Expanded(
-            child: _NavBarButton(
-              iconPath: _navPages[2].iconPath,
-              selected: _index == 2,
-              onTap: () => setState(() => _index = 2),
-            ),
-          ),
-          Expanded(
-            child: _NavBarButton(
-              iconPath: _navPages[3].iconPath,
-              selected: _index == 3,
-              onTap: () => setState(() => _index = 3),
-            ),
-          ),
-        ],
+          child: Row(
+            children: [
+              Expanded(
+                child: _NavBarButton(
+                  iconPath: _navPages[0].iconPath,
+                  selected: _index == 0,
+                  onTap: () => setState(() => _index = 0),
+                ),
+              ),
+              Expanded(
+                child: _NavBarButton(
+                  iconPath: _navPages[1].iconPath,
+                  selected: _index == 1,
+                  onTap: () => setState(() => _index = 1),
+                ),
+              ),
+              const SizedBox(width: 72),
+              Expanded(
+                child: _NavBarButton(
+                  iconPath: _navPages[2].iconPath,
+                  selected: _index == 2,
+                  onTap: () => setState(() => _index = 2),
+                ),
+              ),
+              Expanded(
+                child: _NavBarButton(
+                  iconPath: _navPages[3].iconPath,
+                  selected: _index == 3,
+                  onTap: () => setState(() => _index = 3),
+                ),
+              ),
+            ],
       ),
     ),
   ),
@@ -184,15 +205,50 @@ class _HomeList extends ConsumerWidget {
         if (list.isEmpty) return const _EmptyState();
         return RefreshIndicator(
           onRefresh: () => ref.refresh(templateListProvider.future),
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.lg,
-              AppSpacing.md,
-              AppSpacing.xxl,
-            ),
-            itemCount: list.length,
-            itemBuilder: (context, i) => _TemplateCard(template: list[i]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Home',
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineMedium
+                          ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.onSurface),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Your workout templates',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(color: AppColors.onSurfaceMute),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    0,
+                    AppSpacing.md,
+                    AppSpacing.xxl,
+                  ),
+                  itemCount: list.length,
+                  itemBuilder: (context, i) => _TemplateCard(template: list[i]),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -218,12 +274,12 @@ class _StatsPage extends StatelessWidget {
   }
 }
 
-class _SettingsPage extends StatelessWidget {
-  const _SettingsPage();
+class _HealthPage extends StatelessWidget {
+  const _HealthPage();
 
   @override
   Widget build(BuildContext context) {
-    return const SettingsScreen();
+    return const HealthScreen();
   }
 }
 
@@ -436,35 +492,33 @@ class _TemplateCard extends ConsumerWidget {
                   ],
                 ),
               ),
-              PopupMenuButton<_CardAction>(
-                icon: const Icon(Icons.more_vert, color: AppColors.onSurfaceMute, size: 20),
-                padding: EdgeInsets.zero,
-                onSelected: (action) async {
-                  if (action == _CardAction.edit) {
-                    if (context.mounted) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => TemplateBuilderScreen(existing: template),
-                        ),
-                      );
-                    }
-                  } else if (action == _CardAction.delete) {
-                    if (context.mounted) {
-                      await _confirmDelete(context, ref);
-                    }
-                  }
-                },
-                itemBuilder: (ctx) => [
-                  const PopupMenuItem(
-                    value: _CardAction.edit,
-                    child: Text('Edit'),
-                  ),
-                  const PopupMenuItem(
-                    value: _CardAction.delete,
-                    child: Text('Delete'),
-                  ),
-                ],
-              ),
+               Row(
+                 mainAxisSize: MainAxisSize.min,
+                 children: [
+                   IconButton(
+                     icon: const Icon(Icons.edit_outlined, color: AppColors.onSurfaceMute, size: 20),
+                     onPressed: () {
+                       if (context.mounted) {
+                         Navigator.of(context).push(
+                           MaterialPageRoute(
+                             builder: (_) => TemplateBuilderScreen(existing: template),
+                           ),
+                         );
+                       }
+                     },
+                     tooltip: 'Edit',
+                   ),
+                   IconButton(
+                     icon: const Icon(Icons.delete_outlined, color: AppColors.onSurfaceMute, size: 20),
+                     onPressed: () {
+                       if (context.mounted) {
+                         _confirmDelete(context, ref);
+                       }
+                     },
+                     tooltip: 'Delete',
+                   ),
+                 ],
+               ),
             ],
           ),
         ),
@@ -472,5 +526,3 @@ class _TemplateCard extends ConsumerWidget {
     );
   }
 }
-
-enum _CardAction { edit, delete }

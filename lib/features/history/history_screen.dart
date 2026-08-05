@@ -19,40 +19,61 @@ class HistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(_historyProvider);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'History',
-          style: TextStyle(
-            fontFamily: 'BarlowCondensed',
-            fontSize: 26,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-            color: AppColors.onSurface,
-          ),
-        ),
-      ),
-      body: history.when(
+    return history.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Failed to load history:\n$e')),
         data: (list) {
           if (list.isEmpty) return const _EmptyState();
           return RefreshIndicator(
             onRefresh: () => ref.refresh(_historyProvider.future),
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                AppSpacing.lg,
-                AppSpacing.md,
-                AppSpacing.xxl,
-              ),
-              itemCount: list.length,
-              itemBuilder: (context, i) => _SessionTile(session: list[i]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'History',
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.onSurface),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Past workout sessions',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(color: AppColors.onSurfaceMute),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      0,
+                      AppSpacing.md,
+                      AppSpacing.xxl,
+                    ),
+                    itemCount: list.length,
+                    itemBuilder: (context, i) => _SessionTile(session: list[i]),
+                  ),
+                ),
+              ],
             ),
           );
         },
-      ),
-    );
+      );
   }
 }
 

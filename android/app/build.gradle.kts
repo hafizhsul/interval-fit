@@ -4,15 +4,27 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Patch wakelock_plus 1.5.2 Pigeon-generated Kotlin (missing package declaration).
-// Sumber: android/patches/WakelockPlusMessages.g.kt — copy ke pub cache sebelum compile.
-// Hapus patch ini jika wakelock_plus dinaikkan ke >=1.6 (konflik rantai win32).
-val patchWakelock by tasks.registering(Copy::class) {
-    from("${rootDir}/patches/WakelockPlusMessages.g.kt")
-    into("${System.getProperty("user.home")}/.pub-cache/hosted/pub.dev/wakelock_plus-1.5.2/android/src/main/kotlin/dev/fluttercommunity/plus/wakelock/")
-}
-tasks.matching { it.name.startsWith("compile") }.configureEach {
-    dependsOn(patchWakelock)
+// Patch wakelock_plus 1.5.x — 3 files perlu diperbaiki agar kompatibel dgn Kotlin compiler.
+// Hapus block ini jika wakelock_plus >=1.6.
+val pubCache = file("${System.getProperty("user.home")}/.pub-cache/hosted/pub.dev")
+val files = fileTree(pubCache).matching {
+    include("wakelock_plus-1.5.*/android/src/main/kotlin/dev/fluttercommunity/plus/wakelock/*.kt")
+}.files
+if (files.isNotEmpty()) {
+    val dir = files.first().parentFile
+    val patchDir = file("${rootDir}/patches")
+    listOf("WakelockPlusMessages.g.kt", "Wakelock.kt", "WakelockPlusPlugin.kt").forEach { name ->
+        val target = file("${dir}/${name}")
+        val patch = file("${patchDir}/${name}")
+        if (target.exists() && patch.exists()) {
+            val tContent = target.readText()
+            val pContent = patch.readText()
+            if (tContent != pContent) {
+                target.writeText(pContent)
+                project.logger.lifecycle("✓ Patched wakelock_plus/${name}")
+            }
+        }
+    }
 }
 
 android {

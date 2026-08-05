@@ -14,18 +14,6 @@ class StatsScreen extends ConsumerWidget {
     final stat = ref.watch(_statsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Stats',
-          style: TextStyle(
-            fontFamily: 'BarlowCondensed',
-            fontSize: 26,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-            color: AppColors.onSurface,
-          ),
-        ),
-      ),
       body: stat.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Failed to load stats:\n$e')),
@@ -53,10 +41,43 @@ class StatsScreen extends ConsumerWidget {
               ),
             );
           }
-          return RefreshIndicator(
-            onRefresh: () => ref.refresh(_statsProvider.future),
-            child: _StatsBody(stat: s),
-          );
+  return RefreshIndicator(
+        onRefresh: () => ref.refresh(_statsProvider.future),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Statistics',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.onSurface),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Your workout progress overview',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(color: AppColors.onSurfaceMute),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _StatsBody(stat: s)),
+          ],
+        ),
+      );
         },
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
@@ -29,7 +30,8 @@ final settingsServiceProvider = Provider<SettingsService>(
 
 final voiceServiceProvider = Provider<VoiceService>((ref) {
   final settings = ref.watch(settingsServiceProvider);
-  final vs = VoiceService(enabled: settings.voiceEnabled);
+  final focusPlayer = AudioPlayer();
+  final vs = VoiceService(enabled: settings.voiceEnabled, focusPlayer: focusPlayer);
   vs.init();
   return vs;
 });

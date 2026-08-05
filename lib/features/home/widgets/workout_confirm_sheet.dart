@@ -23,61 +23,63 @@ class WorkoutConfirmSheet extends StatelessWidget {
     final seconds = totalSeconds % 60;
     final estDuration = minutes > 0 ? '${minutes}m${seconds}s' : '${seconds}s';
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xxl,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 32,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.onSurfaceMute.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(2),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xxl,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 32,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.onSurfaceMute.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          ExerciseHero(exerciseType: template.exerciseType, color: AppColors.primary),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            template.name,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppColors.onSurface,
+            const SizedBox(height: AppSpacing.lg),
+            ExerciseHero(exerciseType: template.exerciseType, color: AppColors.primary),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              template.name,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: AppColors.onSurface,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _Row(label: 'Sets', value: '${template.sets}'),
-          _Row(label: 'Work', value: '${template.workSeconds}s'),
-          _Row(label: 'Rest', value: '${template.restSeconds}s'),
-          if (template.warmupSeconds > 0)
-            _Row(label: 'Warmup', value: '${template.warmupSeconds}s'),
-          if (template.cooldownSeconds > 0)
-            _Row(label: 'Cooldown', value: '${template.cooldownSeconds}s'),
-          _Row(label: 'Est. Total', value: estDuration),
-          const SizedBox(height: AppSpacing.lg),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(double.infinity, 52),
-              backgroundColor: AppColors.primary,
+            const SizedBox(height: AppSpacing.md),
+            _Row(label: 'Sets', value: '${template.sets}'),
+            _Row(label: 'Work', value: '${template.workSeconds}s'),
+            _Row(label: 'Rest', value: '${template.restSeconds}s'),
+            if (template.warmupSeconds > 0)
+              _Row(label: 'Warmup', value: '${template.warmupSeconds}s'),
+            if (template.cooldownSeconds > 0)
+              _Row(label: 'Cooldown', value: '${template.cooldownSeconds}s'),
+            _Row(label: 'Est. Total', value: estDuration),
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 52),
+                backgroundColor: AppColors.primary,
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ActiveWorkoutScreen(template: template),
+                  ),
+                );
+              },
+              child: const Text('Start Exercise', style: TextStyle(fontSize: 16)),
             ),
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ActiveWorkoutScreen(template: template),
-                ),
-              );
-            },
-            child: const Text('Mulai Latihan', style: TextStyle(fontSize: 16)),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Batal', style: TextStyle(color: AppColors.onSurfaceMute)),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.sm),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel', style: TextStyle(color: AppColors.onSurfaceMute)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -85,6 +87,7 @@ class WorkoutConfirmSheet extends StatelessWidget {
 
 class _Row extends StatelessWidget {
   const _Row({required this.label, required this.value});
+
   final String label;
   final String value;
 
