@@ -6,7 +6,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'timer_engine.dart' show WorkoutPhase;
 
 abstract class Tts {
-  Future<void> speak(String text);
+  Future<void> speak(String text, {bool focus = false});
   Future<void> stop();
   Future<void> initLocale();
 }
@@ -20,11 +20,21 @@ class FlutterTtsAdapter implements Tts {
 
   final FlutterTts _tts;
   @override
-  Future<void> speak(String text) => _tts.speak(text);
+  Future<void> speak(String text, {bool focus = false}) =>
+      _tts.speak(text, focus: focus);
+
   @override
   Future<void> stop() => _tts.stop();
+
   @override
-  Future<void> initLocale() => _tts.setLanguage('en-US');
+  Future<void> initLocale() async {
+    // Android TTS needs navigation attributes + transient ducking focus;
+    // unsupported platforms safely ignore the Android-only attribute call.
+    try {
+      await _tts.setAudioAttributesForNavigation();
+    } catch (_) {}
+    await _tts.setLanguage('en-US');
+  }
 }
 
 class AudioPlayerBeep implements BeepPlayer {
@@ -39,8 +49,8 @@ class AudioPlayerBeep implements BeepPlayer {
 
 final _audioDuck = AudioContext(
   android: AudioContextAndroid(
-    audioFocus: AndroidAudioFocus.gainTransient,
-    usageType: AndroidUsageType.media,
+    audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+    usageType: AndroidUsageType.assistanceNavigationGuidance,
     contentType: AndroidContentType.speech,
   ),
 );
@@ -49,17 +59,14 @@ class VoiceService {
   VoiceService({
     Tts? tts,
     BeepPlayer? beep,
-    this._focusPlayer,
     bool enabled = true,
   })  : _tts = tts ?? FlutterTtsAdapter(),
         _beep = beep ?? AudioPlayerBeep() {
     _enabled = enabled;
-    _focusPlayer?.setAudioContext(_audioDuck);
   }
 
   final Tts _tts;
   final BeepPlayer _beep;
-  final AudioPlayer? _focusPlayer;
   bool _enabled = true;
   bool _useFallback = false;
 
@@ -111,18 +118,7 @@ class VoiceService {
       await _beep.beep();
       return;
     }
-    // Request audio focus so YT Music ducks before TTS speaks
-    final focus = _focusPlayer;
-    if (focus != null) {
-      try {
-        await focus.setVolume(0.15);
-        unawaited(focus.play(AssetSource('audio/beep.wav')));
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-      } catch (_) {}
-    }
-    await _tts.speak(text);
-    try {
-      await _focusPlayer?.stop();
-    } catch (_) {}
+    // Let Android TTS request transient ducking focus for the utterance.
+    await _tts.speak(text, focus: true);
   }
 }

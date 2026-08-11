@@ -11,7 +11,8 @@ import 'package:interval_fit/features/active_workout/active_workout_controller.d
 class _FakeTts implements Tts {
   final spoken = <String>[];
   @override
-  Future<void> speak(String text) async => spoken.add(text);
+  Future<void> speak(String text, {bool focus = false}) async =>
+      spoken.add(text);
   @override
   Future<void> stop() async {}
   @override
