@@ -24,14 +24,17 @@ Future<void> main() async {
   runApp(ProviderScope(overrides: overrides, child: const IntervalFitApp()));
 }
 
-class IntervalFitApp extends StatelessWidget {
+class IntervalFitApp extends ConsumerWidget {
   const IntervalFitApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(themeModeProvider);
+    AppColors.setLight(mode == ThemeMode.light);
     return MaterialApp(
       title: 'Interval Fit',
-      theme: AppTheme.dark,
+      theme: mode == ThemeMode.light ? AppTheme.light : AppTheme.dark,
+      themeMode: ThemeMode.light,
       debugShowCheckedModeBanner: false,
       home: const SplashScreen(),
     );

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../core/providers.dart';
 import '../../core/battery_hint.dart';
+import '../../core/providers.dart';
 import '../../shared/design/tokens.dart';
 import '../../shared/theme/app_theme.dart';
 
@@ -16,12 +16,14 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late bool _voiceEnabled;
+  late bool _darkTheme;
 
   @override
   void initState() {
     super.initState();
     final settings = ref.read(settingsServiceProvider);
     _voiceEnabled = settings.voiceEnabled;
+    _darkTheme = settings.darkTheme;
   }
 
   @override
@@ -30,110 +32,165 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final voice = ref.read(voiceServiceProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Settings',
-          style: TextStyle(
-            fontFamily: 'BarlowCondensed',
-            fontSize: 26,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-            color: AppColors.onSurface,
-          ),
+        leading: IconButton(
+          tooltip: 'Back',
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
+        title: const Text('Settings'),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md,
-          AppSpacing.lg,
-          AppSpacing.md,
-          AppSpacing.xxl,
-        ),
+        padding: const EdgeInsets.fromLTRB(0, AppSpacing.sm, 0, AppSpacing.xxl),
         children: [
-          Card(
-            margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            elevation: 0,
-            color: AppColors.surfaceHigh,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              side: const BorderSide(color: AppColors.border),
-            ),
+          const _SettingsIntro(),
+          const _SectionLabel('AUDIO'),
+          _SettingsCard(
             child: SwitchListTile(
-              title: Text('Voice guidance', style: Theme.of(context).textTheme.titleLarge),
-              subtitle: Text(
-                'Voice cues during countdown & phase changes',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              title: const Text('Voice guidance'),
+              subtitle: const Text('Cues during countdowns and phase changes'),
               secondary: SvgPicture.asset(
                 'assets/svg/speaker.svg',
                 width: 24,
                 height: 24,
-                colorFilter: const ColorFilter.mode(AppColors.onSurfaceMute, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(
+                  AppColors.onSurfaceMute,
+                  BlendMode.srcIn,
+                ),
               ),
               value: _voiceEnabled,
-              onChanged: (v) {
-                setState(() => _voiceEnabled = v);
-                settings.setVoiceEnabled(v);
-                voice.setEnabled(v);
+              onChanged: (value) {
+                setState(() => _voiceEnabled = value);
+                settings.setVoiceEnabled(value);
+                voice.setEnabled(value);
               },
-              activeThumbColor: AppColors.primary,
-              activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          Card(
-            margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            elevation: 0,
-            color: AppColors.surfaceHigh,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              side: const BorderSide(color: AppColors.border),
+          const _SectionLabel('APPEARANCE'),
+          _SettingsCard(
+            child: SwitchListTile(
+              title: const Text('Dark theme'),
+              subtitle: Text(
+                _darkTheme
+                    ? 'Easy on the eyes at night'
+                    : 'Bright and clear for daytime',
+              ),
+              secondary: Icon(
+                _darkTheme ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                color: AppColors.primary,
+              ),
+              value: _darkTheme,
+              onChanged: (value) async {
+                setState(() => _darkTheme = value);
+                ref.read(themeModeProvider.notifier).state = value
+                    ? ThemeMode.dark
+                    : ThemeMode.light;
+                await settings.setDarkTheme(value);
+              },
             ),
+          ),
+          const _SectionLabel('DEVICE'),
+          _SettingsCard(
             child: ListTile(
-              leading: Icon(Icons.battery_std, color: AppColors.onSurfaceMute, size: 24),
-              title: Text('Battery Optimization',
-                  style: Theme.of(context).textTheme.titleLarge),
-              subtitle: Text('Keep timer running when phone is locked',
-                  style: Theme.of(context).textTheme.bodyMedium),
-              trailing: const Icon(Icons.chevron_right,
-                  color: AppColors.onSurfaceMute, size: 20),
-              onTap: requestBatteryOptimizationExemption,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
+              leading: const Icon(Icons.battery_std_rounded),
+              title: const Text('Battery optimization'),
+              subtitle: const Text(
+                'Keep timer running when the phone is locked',
               ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: requestBatteryOptimizationExemption,
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          Card(
-            margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            elevation: 0,
-            color: AppColors.surfaceHigh,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              side: const BorderSide(color: AppColors.border),
-            ),
+          const _SectionLabel('ABOUT'),
+          _SettingsCard(
             child: ListTile(
               leading: SvgPicture.asset(
                 'assets/svg/dumbbell.svg',
                 width: 24,
                 height: 24,
-                colorFilter: const ColorFilter.mode(AppColors.onSurfaceMute, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(
+                  AppColors.onSurfaceMute,
+                  BlendMode.srcIn,
+                ),
               ),
-              title: Text('Interval Fit', style: Theme.of(context).textTheme.titleLarge),
-              subtitle: Text('v1.1.0', style: Theme.of(context).textTheme.bodyMedium),
-              trailing: Icon(Icons.chevron_right, color: AppColors.onSurfaceMute, size: 20),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
+              title: const Text('Interval Fit'),
+              subtitle: const Text('v1.1.0'),
+              trailing: const Icon(Icons.chevron_right_rounded),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SettingsIntro extends StatelessWidget {
+  const _SettingsIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.lg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Make it yours',
+            style: Theme.of(context).textTheme.headlineLarge,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Tune the experience to your rhythm.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.xs,
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: AppColors.primary,
+          letterSpacing: 1.8,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
+      child: child,
     );
   }
 }

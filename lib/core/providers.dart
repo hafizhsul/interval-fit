@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
@@ -20,12 +21,19 @@ final databaseProvider = Provider<Database>((ref) {
 });
 
 final sharedPrefsProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError('override di main() setelah SharedPreferences.getInstance()');
+  throw UnimplementedError(
+    'override di main() setelah SharedPreferences.getInstance()',
+  );
 });
 
 final settingsServiceProvider = Provider<SettingsService>(
   (ref) => SettingsService(ref.watch(sharedPrefsProvider)),
 );
+
+final themeModeProvider = StateProvider<ThemeMode>((ref) {
+  final settings = ref.watch(settingsServiceProvider);
+  return settings.darkTheme ? ThemeMode.dark : ThemeMode.light;
+});
 
 final voiceServiceProvider = Provider<VoiceService>((ref) {
   final settings = ref.watch(settingsServiceProvider);
@@ -53,16 +61,18 @@ final healthConnectServiceProvider = Provider<HealthConnectService>(
 /// Trigger a health data refresh.
 final healthRefreshTrigger = StateProvider<int>((ref) => 0);
 
-final healthForDateProvider = FutureProvider.family<Map<String, double>, int>(
-  (ref, epochMs) {
-    final service = ref.watch(healthConnectServiceProvider);
-    return service.getForDate(epochMs);
-  },
-);
+final healthForDateProvider = FutureProvider.family<Map<String, double>, int>((
+  ref,
+  epochMs,
+) {
+  final service = ref.watch(healthConnectServiceProvider);
+  return service.getForDate(epochMs);
+});
 
 /// Daftar template untuk home. Auto-refresh via [refresh].
-final templateListProvider =
-    FutureProvider.autoDispose<List<WorkoutTemplate>>((ref) {
+final templateListProvider = FutureProvider.autoDispose<List<WorkoutTemplate>>((
+  ref,
+) {
   return ref.watch(templateRepositoryProvider).getAll();
 });
 

@@ -11,7 +11,11 @@ class SettingsService {
   final SharedPreferences _prefs;
 
   static const _kVoiceEnabled = 'voice_enabled';
+  static const _kDarkTheme = 'dark_theme';
 
   bool get voiceEnabled => _prefs.getBool(_kVoiceEnabled) ?? true;
   Future<void> setVoiceEnabled(bool v) => _prefs.setBool(_kVoiceEnabled, v);
+
+  bool get darkTheme => _prefs.getBool(_kDarkTheme) ?? true;
+  Future<void> setDarkTheme(bool v) => _prefs.setBool(_kDarkTheme, v);
 }
