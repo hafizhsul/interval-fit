@@ -16,7 +16,6 @@ class BackgroundKeepAlive {
   BackgroundKeepAlive._();
 
   static const _notifId = 888;
-  static const _channelId = 'intervalfit_workout';
   static final _service = FlutterBackgroundService();
 
   /// Channel ke MainActivity untuk cek/minta izin notifikasi (Android 13+).
@@ -59,7 +58,11 @@ class BackgroundKeepAlive {
         // crash tak-tertangkap, lalu WatchdogReceiver respawn tiap 5s (crash loop
         // yang bertahan walau app dibuka ulang).
         foregroundServiceTypes: const [AndroidForegroundType.specialUse],
-        notificationChannelId: _channelId,
+        // JANGAN set notificationChannelId: plugin hanya membuat channel saat
+        // ID-nya null (default FOREGROUND_DEFAULT). Channel custom yang tak
+        // pernah dibuat → startForeground() di Android 13+ lempar
+        // CannotPostForegroundServiceNotificationException (crash fatal,
+        // tak bisa ditangkap dari Dart).
         initialNotificationTitle: 'Interval Fit',
         initialNotificationContent: 'Workout session in progress',
         foregroundServiceNotificationId: _notifId,
