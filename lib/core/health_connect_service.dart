@@ -11,7 +11,7 @@ class HealthConnectService {
   bool _configured = false;
   bool _permissionGranted = false;
 
-  Future<bool> _ensureConfigured() async {
+  Future<bool> ensureConfigured() async {
     if (_configured) return true;
     try {
       await _health.configure();
@@ -23,7 +23,7 @@ class HealthConnectService {
   }
 
   Future<bool> isAvailable() async {
-    if (!await _ensureConfigured()) return false;
+    if (!await ensureConfigured()) return false;
     try {
       return await _health.isHealthConnectAvailable();
     } catch (_) {
@@ -31,25 +31,43 @@ class HealthConnectService {
     }
   }
 
-  Future<bool> hasPermission() async => _permissionGranted;
-
-  Future<bool> requestPermissions() async {
-    if (!await _ensureConfigured()) return false;
+  Future<bool> hasPermission() async {
+    if (_permissionGranted) return true;
     try {
-      await _health.requestAuthorization([
-        HealthDataType.STEPS,
-        HealthDataType.HEART_RATE,
-        HealthDataType.ACTIVE_ENERGY_BURNED,
-      ]);
-      _permissionGranted = true;
-      return true;
+      return await platformHasPermissions() ?? false;
     } catch (_) {
       return false;
     }
   }
 
+  Future<bool> requestPermissions() async {
+    if (!await ensureConfigured()) return false;
+    try {
+      final granted = await platformRequestAuthorization();
+      _permissionGranted = granted;
+      return granted;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Platform reads. Overridable so tests can fake results.
+  Future<bool?> platformHasPermissions() {
+    return _health.hasPermissions(_dataTypes);
+  }
+
+  Future<bool> platformRequestAuthorization() {
+    return _health.requestAuthorization(_dataTypes);
+  }
+
+  static const _dataTypes = [
+    HealthDataType.STEPS,
+    HealthDataType.HEART_RATE,
+    HealthDataType.ACTIVE_ENERGY_BURNED,
+  ];
+
   Future<List<HealthData>> fetchToday() async {
-    if (!await _ensureConfigured()) return [];
+    if (!await ensureConfigured()) return [];
 
     try {
       final now = DateTime.now();
@@ -71,15 +89,18 @@ class HealthConnectService {
             types: [type],
           );
           for (final r in result) {
-            final value = (r.value as NumericHealthValue).numericValue.toDouble();
-            records.add(HealthData(
-              type: _mapType(type),
-              value: value,
-              unit: _unitFor(type),
-              startTime: r.dateFrom.millisecondsSinceEpoch,
-              endTime: r.dateTo.millisecondsSinceEpoch,
-              syncedAt: DateTime.now().millisecondsSinceEpoch,
-            ));
+            final value = (r.value as NumericHealthValue).numericValue
+                .toDouble();
+            records.add(
+              HealthData(
+                type: _mapType(type),
+                value: value,
+                unit: _unitFor(type),
+                startTime: r.dateFrom.millisecondsSinceEpoch,
+                endTime: r.dateTo.millisecondsSinceEpoch,
+                syncedAt: DateTime.now().millisecondsSinceEpoch,
+              ),
+            );
           }
         } catch (_) {
           // Record type not available on this device — skip
@@ -95,7 +116,11 @@ class HealthConnectService {
     final records = await fetchToday();
     if (records.isEmpty) return;
     final now = DateTime.now();
-    final dayStart = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
+    final dayStart = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).millisecondsSinceEpoch;
     final dayEnd = dayStart + (24 * 60 * 60 * 1000);
     await _repository.deleteByDateRange(dayStart, dayEnd);
     await _repository.bulkInsert(records);
@@ -108,7 +133,11 @@ class HealthConnectService {
 
   Future<Map<String, double>> getForDate(int epochMs) async {
     final start = DateTime.fromMillisecondsSinceEpoch(epochMs);
-    final dayStart = DateTime(start.year, start.month, start.day).millisecondsSinceEpoch;
+    final dayStart = DateTime(
+      start.year,
+      start.month,
+      start.day,
+    ).millisecondsSinceEpoch;
     final dayEnd = dayStart + (24 * 60 * 60 * 1000);
     final records = await _repository.getByDateRange(dayStart, dayEnd);
     return _aggregate(records);

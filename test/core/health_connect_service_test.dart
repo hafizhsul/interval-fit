@@ -26,32 +26,34 @@ void main() {
     });
 
     test('returns aggregated values', () async {
-      when(() => repo.getToday()).thenAnswer((_) async => [
-        HealthData(
-          type: HealthRecordType.steps,
-          value: 5000,
-          unit: 'steps',
-          startTime: 0,
-          endTime: 3600000,
-          syncedAt: 1000,
-        ),
-        HealthData(
-          type: HealthRecordType.heartRate,
-          value: 72,
-          unit: 'bpm',
-          startTime: 0,
-          endTime: 0,
-          syncedAt: 1000,
-        ),
-        HealthData(
-          type: HealthRecordType.activeEnergyBurned,
-          value: 250,
-          unit: 'kcal',
-          startTime: 0,
-          endTime: 3600000,
-          syncedAt: 1000,
-        ),
-      ]);
+      when(() => repo.getToday()).thenAnswer(
+        (_) async => [
+          HealthData(
+            type: HealthRecordType.steps,
+            value: 5000,
+            unit: 'steps',
+            startTime: 0,
+            endTime: 3600000,
+            syncedAt: 1000,
+          ),
+          HealthData(
+            type: HealthRecordType.heartRate,
+            value: 72,
+            unit: 'bpm',
+            startTime: 0,
+            endTime: 0,
+            syncedAt: 1000,
+          ),
+          HealthData(
+            type: HealthRecordType.activeEnergyBurned,
+            value: 250,
+            unit: 'kcal',
+            startTime: 0,
+            endTime: 3600000,
+            syncedAt: 1000,
+          ),
+        ],
+      );
 
       final result = await svc.getTodayAggregated();
 
@@ -64,8 +66,7 @@ void main() {
 
   group('getForDate', () {
     test('queries repository with correct date range', () async {
-      when(() => repo.getByDateRange(any(), any()))
-          .thenAnswer((_) async => []);
+      when(() => repo.getByDateRange(any(), any())).thenAnswer((_) async => []);
 
       final epochMs = DateTime(2025, 6, 15).millisecondsSinceEpoch;
       await svc.getForDate(epochMs);
@@ -77,17 +78,18 @@ void main() {
 
     test('returns aggregated values from repository', () async {
       final epochMs = DateTime(2025, 6, 15).millisecondsSinceEpoch;
-      when(() => repo.getByDateRange(any(), any()))
-          .thenAnswer((_) async => [
-        HealthData(
-          type: HealthRecordType.steps,
-          value: 3000,
-          unit: 'steps',
-          startTime: epochMs,
-          endTime: epochMs + 3600000,
-          syncedAt: epochMs + 1000,
-        ),
-      ]);
+      when(() => repo.getByDateRange(any(), any())).thenAnswer(
+        (_) async => [
+          HealthData(
+            type: HealthRecordType.steps,
+            value: 3000,
+            unit: 'steps',
+            startTime: epochMs,
+            endTime: epochMs + 3600000,
+            syncedAt: epochMs + 1000,
+          ),
+        ],
+      );
 
       final result = await svc.getForDate(epochMs);
 
@@ -97,8 +99,7 @@ void main() {
 
   group('syncToday', () {
     test('calls deleteByDateRange and bulkInsert with today range', () async {
-      when(() => repo.deleteByDateRange(any(), any()))
-          .thenAnswer((_) async {});
+      when(() => repo.deleteByDateRange(any(), any())).thenAnswer((_) async {});
       when(() => repo.bulkInsert(any())).thenAnswer((_) async {});
 
       // Override fetchToday to return data without calling platform API
@@ -106,7 +107,11 @@ void main() {
       await svc2.syncToday();
 
       final now = DateTime.now();
-      final dayStart = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
+      final dayStart = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).millisecondsSinceEpoch;
       final dayEnd = dayStart + (24 * 60 * 60 * 1000);
       verify(() => repo.deleteByDateRange(dayStart, dayEnd)).called(1);
       verify(() => repo.bulkInsert(any())).called(1);
@@ -119,6 +124,40 @@ void main() {
       expect(result, isEmpty);
     });
   });
+
+  group('permissions', () {
+    test('requestPermissions reflects the platform result', () async {
+      final denied = _PlatformResultService(repo, granted: false);
+      expect(await denied.requestPermissions(), isFalse);
+      expect(await denied.hasPermission(), isFalse);
+
+      final granted = _PlatformResultService(repo, granted: true);
+      expect(await granted.requestPermissions(), isTrue);
+      expect(await granted.hasPermission(), isTrue);
+    });
+
+    test('hasPermission queries the platform when not cached', () async {
+      final svc2 = _PlatformResultService(repo, granted: false);
+      // Nothing cached: the real grant state is read back.
+      expect(await svc2.hasPermission(), isFalse);
+    });
+  });
+}
+
+/// Fakes platform permission results without touching the MethodChannel.
+class _PlatformResultService extends HealthConnectService {
+  _PlatformResultService(super.repository, {required this.granted});
+
+  final bool granted;
+
+  @override
+  Future<bool> ensureConfigured() async => true;
+
+  @override
+  Future<bool?> platformHasPermissions() async => granted;
+
+  @override
+  Future<bool> platformRequestAuthorization() async => granted;
 }
 
 class _TestHealthConnectService extends HealthConnectService {
