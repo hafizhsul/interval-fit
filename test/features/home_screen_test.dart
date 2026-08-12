@@ -11,13 +11,13 @@ import 'package:interval_fit/features/home/home_screen.dart';
 import 'package:interval_fit/shared/theme/app_theme.dart';
 
 WorkoutTemplate _tpl(String name) => WorkoutTemplate(
-      name: name,
-      exerciseType: 'skipping',
-      sets: 5,
-      workSeconds: 30,
-      restSeconds: 15,
-      createdAt: 0,
-    );
+  name: name,
+  exerciseType: 'skipping',
+  sets: 5,
+  workSeconds: 30,
+  restSeconds: 15,
+  createdAt: 0,
+);
 
 Future<SharedPreferences> _prefs() async {
   SharedPreferences.setMockInitialValues({});
@@ -34,9 +34,7 @@ void main() {
             (ref) async => [_tpl('Lari Pagi'), _tpl('Skipping HIIT')],
           ),
           sharedPrefsProvider.overrideWithValue(prefs),
-          settingsServiceProvider.overrideWith(
-            (ref) => SettingsService(prefs),
-          ),
+          settingsServiceProvider.overrideWith((ref) => SettingsService(prefs)),
           voiceServiceProvider.overrideWith(
             (ref) => VoiceService(enabled: false),
           ),
@@ -47,9 +45,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Lari Pagi'), findsOneWidget);
+    // Second template sits in the library grid, below the fold.
+    await tester.dragUntilVisible(
+      find.text('Skipping HIIT'),
+      find.byType(CustomScrollView),
+      const Offset(0, -200),
+    );
     expect(find.text('Skipping HIIT'), findsOneWidget);
-    // Summary format.
-    expect(find.textContaining('5 set'), findsWidgets);
+    // Every workout card exposes the set count.
+    expect(find.text('5 SETS'), findsWidgets);
   });
 
   testWidgets('HomeScreen shows empty state', (tester) async {
@@ -59,9 +63,7 @@ void main() {
         overrides: [
           templateListProvider.overrideWith((ref) async => []),
           sharedPrefsProvider.overrideWithValue(prefs),
-          settingsServiceProvider.overrideWith(
-            (ref) => SettingsService(prefs),
-          ),
+          settingsServiceProvider.overrideWith((ref) => SettingsService(prefs)),
           voiceServiceProvider.overrideWith(
             (ref) => VoiceService(enabled: false),
           ),
