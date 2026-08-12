@@ -69,8 +69,10 @@ class _SplashScreenState extends State<SplashScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 LinearProgressIndicator(
-                  backgroundColor: AppColors.onSurfaceDim.withValues(alpha: 0.3),
-                  valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                  backgroundColor: AppColors.onSurfaceDim.withValues(
+                    alpha: 0.3,
+                  ),
+                  valueColor: AlwaysStoppedAnimation(AppColors.primary),
                   minHeight: 3,
                   borderRadius: BorderRadius.circular(2),
                 ),

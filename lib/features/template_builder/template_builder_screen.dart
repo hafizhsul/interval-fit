@@ -51,17 +51,15 @@ class _TemplateBuilderScreenState extends ConsumerState<TemplateBuilderScreen> {
     _rest.controller.addListener(_recalc);
     _warmup.controller.addListener(_recalc);
     _cooldown.controller.addListener(_recalc);
-
     _recalc();
   }
 
   void _recalc() {
     final sets = int.tryParse(_sets.text) ?? 0;
-    final work = _work.seconds;
-    final rest = _rest.seconds;
-    final warmup = _warmup.seconds;
-    final cooldown = _cooldown.seconds;
-    final total = warmup + cooldown + sets * (work + rest);
+    final total =
+        _warmup.seconds +
+        _cooldown.seconds +
+        sets * (_work.seconds + _rest.seconds);
     final m = total ~/ 60;
     final s = total % 60;
     final text = m > 0 ? '$m min $s sec' : '$s sec';
@@ -90,7 +88,6 @@ class _TemplateBuilderScreenState extends ConsumerState<TemplateBuilderScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    final repo = ref.read(templateRepositoryProvider);
     final existing = widget.existing;
     final now = DateTime.now().millisecondsSinceEpoch;
     final template = WorkoutTemplate(
@@ -105,6 +102,7 @@ class _TemplateBuilderScreenState extends ConsumerState<TemplateBuilderScreen> {
       isDefault: existing?.isDefault ?? false,
       createdAt: existing?.createdAt ?? now,
     );
+    final repo = ref.read(templateRepositoryProvider);
     if (existing == null) {
       await repo.create(template);
     } else {
@@ -128,16 +126,14 @@ class _TemplateBuilderScreenState extends ConsumerState<TemplateBuilderScreen> {
   }
 
   void _adjustSets(int delta) {
-    final cur = int.tryParse(_sets.text) ?? 1;
-    final next = cur + delta;
-    if (next >= 1) {
-      _sets.text = next.toString();
-    }
+    final next = (int.tryParse(_sets.text) ?? 1) + delta;
+    if (next >= 1) _sets.text = next.toString();
   }
 
   @override
   Widget build(BuildContext context) {
     final accent = _accentFor(_exerciseType);
+    final isEditing = widget.existing != null;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -145,290 +141,176 @@ class _TemplateBuilderScreenState extends ConsumerState<TemplateBuilderScreen> {
           key: _formKey,
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.chevron_left, color: AppColors.onSurface),
-                      style: IconButton.styleFrom(
-                        backgroundColor: AppColors.surfaceHigh,
-                        shape: const CircleBorder(),
-                        padding: const EdgeInsets.all(12),
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.existing == null ? 'New Template' : 'Edit Template',
-                            style: const TextStyle(
-                              fontFamily: 'BarlowCondensed',
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.onSurface,
-                            ),
-                          ),
-                          const Text(
-                            'Create your custom workout template',
-                            style: TextStyle(
-                              fontFamily: 'Barlow',
-                              fontSize: 13,
-                              color: AppColors.onSurfaceMute,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              _BuilderHeader(
+                title: isEditing ? 'Edit session' : 'New session',
+                subtitle: isEditing
+                    ? 'Tune the rhythm of this workout'
+                    : 'Build a session that fits your pace',
+                onBack: () => Navigator.of(context).pop(),
               ),
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  children: [
-                    const SizedBox(height: AppSpacing.sm),
-                    _BuilderCard(
-                      icon: Icons.description_outlined,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Template Name',
-                            style: TextStyle(
-                              color: AppColors.onSurfaceMute,
-                              fontSize: 12,
-                            ),
-                          ),
-                          TextFormField(
-                            controller: _name,
-                            decoration: const InputDecoration(
-                              hintText: 'e.g. HIIT Cardio',
-                              hintStyle: TextStyle(color: AppColors.onSurfaceDim),
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              contentPadding: EdgeInsets.zero,
-                              isDense: true,
-                            ),
-                            style: const TextStyle(
-                              color: AppColors.onSurface,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            validator: (v) =>
-                                (v == null || v.trim().isEmpty) ? 'Name is required' : null,
-                          ),
-                        ],
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.sm,
+                    AppSpacing.md,
+                    AppSpacing.md,
+                  ),
+                  child: Column(
+                    children: [
+                      _SessionPreview(
+                        accent: accent,
+                        name: _name.text.trim().isEmpty
+                            ? 'Untitled session'
+                            : _name.text.trim(),
+                        type: _exerciseType,
+                        total: _totalText,
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _BuilderCard(
-                      icon: Icons.fitness_center,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Exercise Type',
-                                      style: TextStyle(
-                                        color: AppColors.onSurfaceMute,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _exerciseType[0].toUpperCase() +
-                                          _exerciseType.substring(1),
-                                      style: const TextStyle(
-                                        color: AppColors.onSurface,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: _exerciseTypes.map((type) {
-                              final selected = _exerciseType == type;
-                              return FilterChip(
-                                label: Text(type[0].toUpperCase() + type.substring(1)),
-                                selected: selected,
-                                onSelected: (v) {
-                                  setState(() => _exerciseType = type);
-                                  _recalc();
-                                },
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                  side: BorderSide(color: AppColors.border),
-                                ),
-                                backgroundColor: selected ? AppColors.primary : AppColors.surfaceHigh,
-                                labelStyle: TextStyle(
-                                  color: selected ? Colors.white : AppColors.onSurfaceMute,
-                                  fontSize: 13,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ],
+                      const SizedBox(height: AppSpacing.lg),
+                      const _SectionLabel(
+                        eyebrow: '01 / IDENTITY',
+                        title: 'Name your session',
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _BuilderCard(
-                      icon: Icons.layers,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Number of Sets',
-                                  style: TextStyle(
-                                    color: AppColors.onSurfaceMute,
-                                    fontSize: 12,
+                      const SizedBox(height: AppSpacing.sm),
+                      _BuilderCard(
+                        icon: Icons.edit_note_rounded,
+                        iconColor: accent,
+                        child: TextFormField(
+                          controller: _name,
+                          decoration: const InputDecoration(
+                            hintText: 'e.g. Morning intervals',
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                            isDense: true,
+                          ),
+                          style: TextStyle(
+                            color: AppColors.onSurface,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'Name is required'
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      const _SectionLabel(
+                        eyebrow: '02 / MOVEMENT',
+                        title: 'Choose your movement',
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _MovementPicker(
+                        selected: _exerciseType,
+                        onChanged: (value) =>
+                            setState(() => _exerciseType = value),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      const _SectionLabel(
+                        eyebrow: '03 / RHYTHM',
+                        title: 'Set the interval',
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _BuilderCard(
+                        icon: Icons.layers_rounded,
+                        iconColor: accent,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Rounds',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall,
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _sets.text.isEmpty ? '1' : _sets.text,
-                                  style: const TextStyle(
-                                    color: AppColors.onSurface,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _sets.text.isEmpty ? '1' : _sets.text,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineMedium
+                                        ?.copyWith(color: AppColors.onSurface),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove, size: 20),
-                                style: IconButton.styleFrom(
-                                  backgroundColor: AppColors.surface,
-                                  padding: const EdgeInsets.all(8),
-                                ),
-                                onPressed: () => _adjustSets(-1),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                icon: const Icon(Icons.add, size: 20),
-                                style: IconButton.styleFrom(
-                                  backgroundColor: AppColors.surface,
-                                  padding: const EdgeInsets.all(8),
-                                ),
-                                onPressed: () => _adjustSets(1),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _DurationCard(
-                      label: 'Work',
-                      subtitle: 'High intensity',
-                      field: _work,
-                      color: AppColors.work,
-                      icon: Icons.timer_outlined,
-                      requirePositive: true,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _DurationCard(
-                      label: 'Rest',
-                      subtitle: 'Recovery time',
-                      field: _rest,
-                      color: AppColors.rest,
-                      icon: Icons.local_cafe,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _DurationCard(
-                      label: 'Warm-up (optional)',
-                      subtitle: 'Prepare your body',
-                      field: _warmup,
-                      color: AppColors.warmup,
-                      icon: Icons.local_fire_department,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _DurationCard(
-                      label: 'Cooldown (optional)',
-                      subtitle: 'Cool down & stretch',
-                      field: _cooldown,
-                      color: AppColors.cooldown,
-                      icon: Icons.spa_outlined,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _BuilderCard(
-                      icon: Icons.access_time,
-                      iconColor: accent,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Estimated Total Time',
-                            style: TextStyle(
-                              color: AppColors.onSurfaceMute,
-                              fontSize: 12,
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _totalText,
-                            style: TextStyle(
-                              color: accent,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
+                            _RoundButton(
+                              icon: Icons.remove,
+                              onTap: () => _adjustSets(-1),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: AppSpacing.sm),
+                            _RoundButton(
+                              icon: Icons.add,
+                              filled: true,
+                              onTap: () => _adjustSets(1),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
+                      const SizedBox(height: AppSpacing.sm),
+                      _DurationCard(
+                        label: 'Work',
+                        subtitle: 'Push your pace',
+                        field: _work,
+                        color: AppColors.work,
+                        icon: Icons.bolt_rounded,
+                        requirePositive: true,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _DurationCard(
+                        label: 'Rest',
+                        subtitle: 'Reset between rounds',
+                        field: _rest,
+                        color: AppColors.rest,
+                        icon: Icons.air_rounded,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _DurationCard(
+                        label: 'Warm-up',
+                        subtitle: 'Optional preparation',
+                        field: _warmup,
+                        color: AppColors.warmup,
+                        icon: Icons.local_fire_department_outlined,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _DurationCard(
+                        label: 'Cooldown',
+                        subtitle: 'Optional recovery',
+                        field: _cooldown,
+                        color: AppColors.cooldown,
+                        icon: Icons.spa_outlined,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      _TotalCard(total: _totalText, accent: accent),
+                    ],
+                  ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                ),
                 child: FilledButton(
                   onPressed: _save,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
                     minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.save_outlined, color: AppColors.background),
-                      SizedBox(width: 8),
-                      Text(
-                        'Save Template',
-                        style: TextStyle(
-                          color: AppColors.background,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      const Icon(Icons.check_rounded),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(isEditing ? 'Update session' : 'Save Template'),
                     ],
                   ),
                 ),
@@ -441,10 +323,241 @@ class _TemplateBuilderScreenState extends ConsumerState<TemplateBuilderScreen> {
   }
 }
 
+class _BuilderHeader extends StatelessWidget {
+  const _BuilderHeader({
+    required this.title,
+    required this.subtitle,
+    required this.onBack,
+  });
+
+  final String title;
+  final String subtitle;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.sm,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'Back',
+            onPressed: onBack,
+            icon: const Icon(Icons.arrow_back_rounded),
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.surfaceHigh,
+              foregroundColor: AppColors.onSurface,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.headlineMedium),
+                const SizedBox(height: 2),
+                Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+            child: Text(
+              'SETUP',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: AppColors.primary,
+                fontSize: 10,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SessionPreview extends StatelessWidget {
+  const _SessionPreview({
+    required this.accent,
+    required this.name,
+    required this.type,
+    required this.total,
+  });
+
+  final Color accent;
+  final String name;
+  final String type;
+  final String total;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: accent,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.24),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Image.asset(
+              _movementAsset(type),
+              width: 48,
+              height: 48,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SESSION PREVIEW',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.78),
+                    fontSize: 10,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Colors.white,
+                    fontSize: 21,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  total,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.82),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.eyebrow, required this.title});
+
+  final String eyebrow;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          eyebrow,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: AppColors.primary,
+            fontSize: 10,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(title, style: Theme.of(context).textTheme.titleLarge),
+      ],
+    );
+  }
+}
+
+class _MovementPicker extends StatelessWidget {
+  const _MovementPicker({required this.selected, required this.onChanged});
+
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 94,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _exerciseTypes.length,
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (context, index) {
+          final type = _exerciseTypes[index];
+          final isSelected = type == selected;
+          final color = _movementColor(type);
+          return InkWell(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            onTap: () => onChanged(type),
+            child: AnimatedContainer(
+              duration: AppMotion.fast,
+              width: 82,
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: isSelected ? color : AppColors.surfaceHigh,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(
+                  color: isSelected ? color : AppColors.border,
+                  width: isSelected ? 2 : 1,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    _movementIcon(type),
+                    color: isSelected ? Colors.white : color,
+                    size: 25,
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    _pretty(type),
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : AppColors.onSurface,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _BuilderCard extends StatelessWidget {
   const _BuilderCard({
     required this.icon,
-    this.iconColor = AppColors.primary,
+    required this.iconColor,
     required this.child,
   });
 
@@ -460,24 +573,54 @@ class _BuilderCard extends StatelessWidget {
       color: AppColors.surfaceHigh,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: AppColors.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
+                color: iconColor.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: Icon(icon, color: iconColor, size: 22),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(child: child),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RoundButton extends StatelessWidget {
+  const _RoundButton({
+    required this.icon,
+    required this.onTap,
+    this.filled = false,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onTap,
+      icon: Icon(icon, size: 20),
+      style: IconButton.styleFrom(
+        backgroundColor: filled ? AppColors.primary : AppColors.surface,
+        foregroundColor: filled ? AppColors.background : AppColors.onSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          side: BorderSide(
+            color: filled ? AppColors.primary : AppColors.border,
+          ),
         ),
       ),
     );
@@ -514,103 +657,80 @@ class _DurationCardState extends State<_DurationCard> {
       color: AppColors.surfaceHigh,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: AppColors.border),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.sm,
+          AppSpacing.sm,
+          8,
+          AppSpacing.sm,
+        ),
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: widget.color.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
+                color: widget.color.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: Icon(widget.icon, color: widget.color, size: 22),
+              child: Icon(widget.icon, color: widget.color, size: 21),
             ),
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     widget.label,
-                    style: const TextStyle(
-                      color: AppColors.onSurface,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: Theme.of(context).textTheme.labelLarge,
                   ),
                   Text(
                     widget.subtitle,
-                    style: const TextStyle(
-                      color: AppColors.onSurfaceMute,
-                      fontSize: 12,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(fontSize: 12),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 50,
-                  child: TextFormField(
-                    controller: widget.field.controller,
-                    textAlign: TextAlign.right,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                    ],
-                    style: const TextStyle(
-                      color: AppColors.onSurface,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    validator: widget.requirePositive
-                        ? (v) {
-                            final n = double.tryParse(
-                              (v ?? '').replaceAll(',', '.'),
-                            );
-                            return (n == null || n <= 0) ? '!' : null;
-                          }
-                        : null,
-                  ),
+            SizedBox(
+              width: 46,
+              child: TextFormField(
+                controller: widget.field.controller,
+                textAlign: TextAlign.right,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
                 ),
-                const SizedBox(width: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _UnitChip(
-                      label: 'sec',
-                      selected: !widget.field.isMinutes,
-                      onTap: () => setState(() => widget.field.isMinutes = false),
-                    ),
-                    _UnitChip(
-                      label: 'min',
-                      selected: widget.field.isMinutes,
-                      onTap: () => setState(() => widget.field.isMinutes = true),
-                    ),
-                  ],
-                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                ],
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(color: AppColors.onSurface),
+                validator: widget.requirePositive
+                    ? (value) {
+                        final number = double.tryParse(
+                          (value ?? '').replaceAll(',', '.'),
+                        );
+                        return number == null || number <= 0 ? '!' : null;
+                      }
+                    : null,
               ),
-              ],
+            ),
+            const SizedBox(width: 6),
+            _UnitSelector(
+              field: widget.field,
+              work: widget.label == 'Work',
+              onChanged: () => setState(() {}),
             ),
           ],
         ),
@@ -619,8 +739,56 @@ class _DurationCardState extends State<_DurationCard> {
   }
 }
 
+class _UnitSelector extends StatelessWidget {
+  const _UnitSelector({
+    required this.field,
+    required this.work,
+    required this.onChanged,
+  });
+
+  final _DurationField field;
+  final bool work;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _UnitChip(
+            label: work ? 'sec' : 's',
+            selected: !field.isMinutes,
+            onTap: () {
+              field.isMinutes = false;
+              onChanged();
+            },
+          ),
+          _UnitChip(
+            label: work ? 'min' : 'm',
+            selected: field.isMinutes,
+            onTap: () {
+              field.isMinutes = true;
+              onChanged();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _UnitChip extends StatelessWidget {
-  const _UnitChip({required this.label, required this.selected, required this.onTap});
+  const _UnitChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -631,23 +799,66 @@ class _UnitChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        duration: AppMotion.fast,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.surfaceHigh,
+          color: selected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-          ),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: selected ? Colors.white : AppColors.onSurfaceMute,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _TotalCard extends StatelessWidget {
+  const _TotalCard({required this.total, required this.accent});
+
+  final String total;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.11),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: accent.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.timer_outlined, color: accent),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ESTIMATED DURATION',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(color: accent, fontSize: 10),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  total,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(color: accent),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.check_circle_outline_rounded, color: accent),
+        ],
       ),
     );
   }
@@ -674,9 +885,50 @@ class _DurationField {
 
   int get seconds {
     final raw = controller.text.replaceAll(',', '.').trim();
-    final v = double.tryParse(raw) ?? 0;
-    return isMinutes ? (v * 60).round() : v.round();
+    final value = double.tryParse(raw) ?? 0;
+    return isMinutes ? (value * 60).round() : value.round();
   }
 
   void dispose() => controller.dispose();
+}
+
+String _pretty(String type) => type[0].toUpperCase() + type.substring(1);
+
+String _movementAsset(String type) {
+  switch (type) {
+    case 'skipping':
+      return 'assets/images/skipping.png';
+    case 'walk':
+      return 'assets/images/walk.png';
+    case 'run':
+      return 'assets/images/run.png';
+    default:
+      return 'assets/images/run.png';
+  }
+}
+
+IconData _movementIcon(String type) {
+  switch (type) {
+    case 'skipping':
+      return Icons.sports_handball_rounded;
+    case 'walk':
+      return Icons.directions_walk_rounded;
+    case 'run':
+      return Icons.directions_run_rounded;
+    default:
+      return Icons.fitness_center_rounded;
+  }
+}
+
+Color _movementColor(String type) {
+  switch (type) {
+    case 'run':
+      return AppColors.work;
+    case 'walk':
+      return AppColors.cooldown;
+    case 'skipping':
+      return AppColors.primary;
+    default:
+      return AppColors.rest;
+  }
 }

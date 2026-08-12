@@ -13,99 +13,177 @@ class WorkoutConfirmSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalWork = template.sets * template.workSeconds;
-    final totalRest = template.sets * template.restSeconds;
-    final totalSeconds = totalWork + totalRest +
-        template.warmupSeconds + template.cooldownSeconds +
-        3; // get-ready seconds
-
-    final minutes = totalSeconds ~/ 60;
-    final seconds = totalSeconds % 60;
-    final estDuration = minutes > 0 ? '${minutes}m${seconds}s' : '${seconds}s';
-
+    final totalSeconds =
+        template.warmupSeconds +
+        template.cooldownSeconds +
+        3 +
+        template.sets * (template.workSeconds + template.restSeconds);
+    final total = _duration(totalSeconds);
     return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xxl,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 32,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.xxl,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.onSurfaceMute.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
+                color: AppColors.onSurfaceDim,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            ExerciseHero(exerciseType: template.exerciseType, color: AppColors.primary),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              template.name,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppColors.onSurface,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'READY WHEN YOU ARE',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: AppColors.primary,
+                        letterSpacing: 1.7,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      template.name,
+                      style: Theme.of(context).textTheme.headlineLarge,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _Row(label: 'Sets', value: '${template.sets}'),
-            _Row(label: 'Work', value: '${template.workSeconds}s'),
-            _Row(label: 'Rest', value: '${template.restSeconds}s'),
-            if (template.warmupSeconds > 0)
-              _Row(label: 'Warmup', value: '${template.warmupSeconds}s'),
-            if (template.cooldownSeconds > 0)
-              _Row(label: 'Cooldown', value: '${template.cooldownSeconds}s'),
-            _Row(label: 'Est. Total', value: estDuration),
-            const SizedBox(height: AppSpacing.lg),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 52),
-                backgroundColor: AppColors.primary,
+              ExerciseHero(
+                exerciseType: template.exerciseType,
+                color: AppColors.primary,
               ),
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ActiveWorkoutScreen(template: template),
-                  ),
-                );
-              },
-              child: const Text('Start Exercise', style: TextStyle(fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'SESSION OVERVIEW',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: AppColors.onSurfaceMute,
+              letterSpacing: 1.5,
             ),
-            const SizedBox(height: AppSpacing.sm),
-            TextButton(
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _Metric(label: 'SETS', value: '${template.sets}'),
+                    ),
+                    Expanded(
+                      child: _Metric(
+                        label: 'WORK',
+                        value: '${template.workSeconds}s',
+                      ),
+                    ),
+                    Expanded(
+                      child: _Metric(
+                        label: 'REST',
+                        value: '${template.restSeconds}s',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Divider(color: AppColors.border),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.schedule_rounded,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'Estimated total',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const Spacer(),
+                    Text(
+                      total,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ActiveWorkoutScreen(template: template),
+                ),
+              );
+            },
+            icon: const Icon(Icons.play_arrow_rounded),
+            label: const Text('Start session'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(double.infinity, 56),
+            ),
+          ),
+          Center(
+            child: TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel', style: TextStyle(color: AppColors.onSurfaceMute)),
+              child: const Text('Not now'),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _Row extends StatelessWidget {
-  const _Row({required this.label, required this.value});
+class _Metric extends StatelessWidget {
+  const _Metric({required this.label, required this.value});
 
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.onSurfaceMute,
-          )),
-          Text(value, style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: AppColors.onSurface,
-          )),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10),
+        ),
+        const SizedBox(height: 3),
+        Text(value, style: Theme.of(context).textTheme.titleLarge),
+      ],
     );
   }
+}
+
+String _duration(int seconds) {
+  final minutes = seconds ~/ 60;
+  final remainder = seconds % 60;
+  return minutes == 0 ? '${remainder}s' : '${minutes}m ${remainder}s';
 }

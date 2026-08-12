@@ -22,7 +22,8 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   final WorkoutTemplate template;
 
   @override
-  ConsumerState<ActiveWorkoutScreen> createState() => _ActiveWorkoutScreenState();
+  ConsumerState<ActiveWorkoutScreen> createState() =>
+      _ActiveWorkoutScreenState();
 }
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
@@ -79,8 +80,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final setsDone = isComplete
         ? widget.template.sets
         : (s.phase == WorkoutPhase.rest
-            ? s.currentSet
-            : (s.currentSet > 0 ? s.currentSet - 1 : 0));
+              ? s.currentSet
+              : (s.currentSet > 0 ? s.currentSet - 1 : 0));
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -105,38 +106,64 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         final isDone = s.phase == WorkoutPhase.done;
         final isPaused = s.status == TimerStatus.paused;
         final phaseColor = PhasePill.colorFor(s.phase);
-        final showSetLabel = !isDone &&
+        final showSet =
+            !isDone &&
             s.phase != WorkoutPhase.getReady &&
             s.phase != WorkoutPhase.warmup &&
             s.phase != WorkoutPhase.cooldown;
-        final showSegmented = !isDone && s.phase != WorkoutPhase.getReady;
 
         return Scaffold(
           backgroundColor: AppColors.background,
           body: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.sm,
+                AppSpacing.md,
+                AppSpacing.md,
+              ),
               child: Column(
-                children: <Widget>[
-                  ExerciseHero(
-                    exerciseType: widget.template.exerciseType,
-                    color: phaseColor,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  PhasePill(phase: s.phase),
-                  if (showSetLabel) ...<Widget>[
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      'SET ${s.currentSet} / ${s.totalSets}',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.onSurfaceMute,
-                        letterSpacing: 2,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'NOW TRAINING',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(color: phaseColor, fontSize: 10),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              widget.template.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                          ],
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  if (showSegmented) ...<Widget>[
-                    const SizedBox(height: AppSpacing.lg),
+                      IconButton(
+                        tooltip: 'Stop workout',
+                        onPressed: _stop,
+                        icon: const Icon(Icons.close_rounded),
+                        style: IconButton.styleFrom(
+                          foregroundColor: AppColors.onSurfaceMute,
+                          backgroundColor: AppColors.surfaceHigh,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _WorkoutStatusBar(
+                    color: phaseColor,
+                    paused: isPaused,
+                    elapsed: formatMmSs(s.totalElapsedSeconds),
+                  ),
+                  if (!isDone && s.phase != WorkoutPhase.getReady) ...[
+                    const SizedBox(height: AppSpacing.sm),
                     SegmentedProgress(
                       total: s.totalSets,
                       current: s.currentSet,
@@ -144,35 +171,70 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                     ),
                   ],
                   Expanded(
-                    child: Center(
-                      child: isDone
-                          ? const _DoneCheck()
-                          : s.phase == WorkoutPhase.getReady
-                              ? _GetReadyCountdown(remaining: s.phaseRemainingSeconds)
-                              : PhaseProgressRing(
-                                  progress: s.phaseProgress,
-                                  color: phaseColor,
-                                  size: 280,
-                                  strokeWidth: 16,
-                                  child: FittedBox(
-                                    child: Text(
-                                      s.phaseRemainingSeconds >= 60
-                                          ? formatMmSs(s.phaseRemainingSeconds)
-                                          : s.phaseRemainingSeconds.toString(),
-                                      style: Theme.of(context).textTheme.displayLarge,
-                                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final ringSize = (constraints.maxWidth - 12).clamp(
+                          210.0,
+                          270.0,
+                        );
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ExerciseHero(
+                              exerciseType: widget.template.exerciseType,
+                              color: phaseColor,
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            PhasePill(phase: s.phase),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              _phaseDescription(s.phase),
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            if (isDone)
+                              const _DoneCheck()
+                            else if (s.phase == WorkoutPhase.getReady)
+                              _GetReadyCountdown(
+                                remaining: s.phaseRemainingSeconds,
+                              )
+                            else
+                              PhaseProgressRing(
+                                progress: s.phaseProgress,
+                                color: phaseColor,
+                                size: ringSize,
+                                strokeWidth: 14,
+                                child: FittedBox(
+                                  child: Text(
+                                    s.phaseRemainingSeconds >= 60
+                                        ? formatMmSs(s.phaseRemainingSeconds)
+                                        : s.phaseRemainingSeconds.toString(),
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.displayLarge,
                                   ),
                                 ),
+                              ),
+                            if (showSet) ...[
+                              const SizedBox(height: AppSpacing.sm),
+                              Text(
+                                'ROUND ${s.currentSet} / ${s.totalSets}',
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: AppColors.onSurfaceMute,
+                                      letterSpacing: 1.8,
+                                    ),
+                              ),
+                            ],
+                          ],
+                        );
+                      },
                     ),
                   ),
-                  if (!isDone) ...<Widget>[
-                    Text(
-                      formatMmSs(s.totalElapsedSeconds),
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AppColors.onSurfaceMute,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
+                  if (!isDone) ...[
+                    _ElapsedBadge(value: formatMmSs(s.totalElapsedSeconds)),
+                    const SizedBox(height: AppSpacing.md),
                     _controls(isPaused, phaseColor),
                   ],
                 ],
@@ -184,6 +246,23 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     );
   }
 
+  String _phaseDescription(WorkoutPhase phase) {
+    switch (phase) {
+      case WorkoutPhase.getReady:
+        return 'Find your position. The session starts soon.';
+      case WorkoutPhase.warmup:
+        return 'Ease in and prepare your body.';
+      case WorkoutPhase.work:
+        return 'Stay steady. Follow the cue.';
+      case WorkoutPhase.rest:
+        return 'Breathe. Your next round is coming.';
+      case WorkoutPhase.cooldown:
+        return 'Slow down and let your body recover.';
+      case WorkoutPhase.done:
+        return 'That session is in the books.';
+    }
+  }
+
   Widget _controls(bool isPaused, Color color) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -192,19 +271,94 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           icon: isPaused ? Icons.play_arrow : Icons.pause,
           label: isPaused ? 'Resume' : 'Pause',
           color: color,
-          onPressed: () => isPaused ? _controller.resume() : _controller.pause(),
+          onPressed: () =>
+              isPaused ? _controller.resume() : _controller.pause(),
         ),
         CircleControlButton(
-          icon: Icons.skip_next,
+          icon: Icons.skip_next_rounded,
           label: 'Skip',
           color: color,
           onPressed: _controller.skip,
         ),
         CircleControlButton(
-          icon: Icons.stop,
+          icon: Icons.stop_rounded,
           label: 'Stop',
           color: AppColors.destructive,
           onPressed: _stop,
+        ),
+      ],
+    );
+  }
+}
+
+class _WorkoutStatusBar extends StatelessWidget {
+  const _WorkoutStatusBar({
+    required this.color,
+    required this.paused,
+    required this.elapsed,
+  });
+
+  final Color color;
+  final bool paused;
+  final String elapsed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            paused ? Icons.pause_circle_outline : Icons.graphic_eq_rounded,
+            color: paused ? AppColors.warmup : color,
+            size: 19,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              paused ? 'Session paused' : 'Audio cues on · keep moving',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          Text(
+            elapsed,
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: color),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ElapsedBadge extends StatelessWidget {
+  const _ElapsedBadge({required this.value});
+
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.timer_outlined, size: 17, color: AppColors.onSurfaceMute),
+        const SizedBox(width: AppSpacing.xs),
+        Text(
+          'ACTIVE $value',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: AppColors.onSurfaceMute,
+            letterSpacing: 1.4,
+          ),
         ),
       ],
     );
@@ -218,17 +372,20 @@ class _DoneCheck extends StatefulWidget {
   State<_DoneCheck> createState() => _DoneCheckState();
 }
 
-class _DoneCheckState extends State<_DoneCheck> with SingleTickerProviderStateMixin {
+class _DoneCheckState extends State<_DoneCheck>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 300),
   );
-  late final Animation<double> _scale = Tween(begin: 0.0, end: 1.0)
-      .chain(CurveTween(curve: Curves.easeOutCubic))
-      .animate(_ctrl);
-  late final Animation<double> _fade = Tween(begin: 0.0, end: 1.0)
-      .chain(CurveTween(curve: Curves.easeOutCubic))
-      .animate(_ctrl);
+  late final Animation<double> _scale = Tween(
+    begin: 0.0,
+    end: 1.0,
+  ).chain(CurveTween(curve: Curves.easeOutCubic)).animate(_ctrl);
+  late final Animation<double> _fade = Tween(
+    begin: 0.0,
+    end: 1.0,
+  ).chain(CurveTween(curve: Curves.easeOutCubic)).animate(_ctrl);
 
   @override
   void initState() {
@@ -270,9 +427,10 @@ class _GetReadyCountdownState extends State<_GetReadyCountdown>
     vsync: this,
     duration: const Duration(milliseconds: 600),
   );
-  late final Animation<double> _scale = Tween<double>(begin: 1.0, end: 1.07)
-      .chain(CurveTween(curve: Curves.easeOut))
-      .animate(_ctrl);
+  late final Animation<double> _scale = Tween<double>(
+    begin: 1.0,
+    end: 1.07,
+  ).chain(CurveTween(curve: Curves.easeOut)).animate(_ctrl);
 
   @override
   void initState() {

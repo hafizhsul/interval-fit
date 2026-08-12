@@ -59,7 +59,7 @@ class _CircleControlButtonState extends State<CircleControlButton> {
           const SizedBox(height: AppSpacing.sm),
           Text(
             widget.label,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Barlow',
               fontSize: 12,
               fontWeight: FontWeight.w600,

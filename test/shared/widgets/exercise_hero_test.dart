@@ -7,10 +7,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: ExerciseHero(
-            exerciseType: 'skipping',
-            color: Colors.orange,
-          ),
+          body: ExerciseHero(exerciseType: 'skipping', color: Colors.orange),
         ),
       ),
     );
@@ -25,10 +22,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: ExerciseHero(
-            exerciseType: 'yoga',
-            color: Colors.orange,
-          ),
+          body: ExerciseHero(exerciseType: 'yoga', color: Colors.orange),
         ),
       ),
     );

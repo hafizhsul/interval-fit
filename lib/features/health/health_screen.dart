@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/health_connect_service.dart';
+import '../../core/providers.dart';
 import '../../data/models/health_data.dart';
 import '../../shared/design/tokens.dart';
 import '../../shared/theme/app_theme.dart';
-import '../../core/providers.dart';
-import '../../core/health_connect_service.dart';
+import '../../shared/widgets/loading_skeleton.dart';
+import '../../shared/widgets/menu_header.dart';
 
 class HealthScreen extends ConsumerWidget {
   const HealthScreen({super.key});
@@ -13,157 +15,222 @@ class HealthScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final service = ref.watch(healthConnectServiceProvider);
-
-    return Scaffold(
-      body: FutureBuilder<String>(
-        future: _computeScreenState(service),
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          switch (snap.data) {
-            case 'notAvailable':
-              return _notAvailableView(context);
-            case 'noPermission':
-              return _noPermissionView(context, service, ref);
-            default:
-              return _healthDataView(context, ref, service);
-          }
-        },
-      ),
+    return FutureBuilder<String>(
+      future: _state(service),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _HealthSkeleton();
+        }
+        switch (snapshot.data) {
+          case 'notAvailable':
+            return _StateView(
+              title: 'Health',
+              subtitle: 'Connect the data behind your effort.',
+              icon: Icons.info_outline_rounded,
+              message: 'Install Google Health Connect to sync activity data.',
+            );
+          case 'noPermission':
+            return _PermissionView(service: service, ref: ref);
+          default:
+            return _DataView(service: service, ref: ref);
+        }
+      },
     );
   }
 
-  Future<String> _computeScreenState(HealthConnectService service) async {
+  Future<String> _state(HealthConnectService service) async {
     if (!await service.isAvailable()) return 'notAvailable';
     if (!await service.hasPermission()) return 'noPermission';
     return 'ready';
   }
+}
 
-  Widget _notAvailableView(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.info_outline, size: 48, color: AppColors.onSurfaceMute),
-          const SizedBox(height: AppSpacing.md),
-          Text('Health Connect not installed',
-              style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: AppSpacing.sm),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Text(
-              'Install Google Health Connect from Google Play Store to sync your activity data.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium),
+class _HealthSkeleton extends StatelessWidget {
+  const _HealthSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
+      children: [
+        const SkeletonMenuHeader(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.sm,
+            AppSpacing.md,
+            AppSpacing.lg,
           ),
-        ],
+          child: const SkeletonBox(height: 44, radius: AppRadius.md),
+        ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            0,
+            AppSpacing.md,
+            AppSpacing.sm,
+          ),
+          child: SkeletonBox(width: 72, height: 14),
+        ),
+        const _HealthMetricSkeleton(),
+        const _HealthMetricSkeleton(),
+        const _HealthMetricSkeleton(),
+      ],
+    );
+  }
+}
+
+class _HealthMetricSkeleton extends StatelessWidget {
+  const _HealthMetricSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: const [
+            SkeletonBox(width: 30, height: 30, radius: AppRadius.pill),
+            SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SkeletonBox(width: 92, height: 16),
+                  SizedBox(height: 8),
+                  SkeletonBox(width: 128, height: 20),
+                ],
+              ),
+            ),
+            SkeletonBox(width: 24, height: 24, radius: AppRadius.pill),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _noPermissionView(BuildContext context, HealthConnectService service, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.shield_outlined, size: 48, color: AppColors.onSurfaceMute),
-          const SizedBox(height: AppSpacing.md),
-          Text('Permission required',
-              style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Grant Health Connect permission to sync your activity data.',
-            style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: AppSpacing.lg),
-          FilledButton.icon(
-            onPressed: () async {
-              await service.requestPermissions();
-              if (context.mounted) {
-                ref.invalidate(healthConnectServiceProvider);
-              }
-            },
-            icon: const Icon(Icons.check_circle_outline),
-            label: const Text('Grant permissions'),
-          ),
-        ],
-      ),
-    );
+class _HealthDataSkeleton extends StatelessWidget {
+  const _HealthDataSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _HealthSkeleton();
   }
+}
 
-  Widget _healthDataView(BuildContext context, WidgetRef ref, HealthConnectService service) {
-    final agg = service.getTodayAggregated();
+class _DataView extends StatelessWidget {
+  const _DataView({required this.service, required this.ref});
+
+  final HealthConnectService service;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
     return FutureBuilder<Map<String, double>>(
-      future: agg,
+      future: service.getTodayAggregated(),
       builder: (context, snapshot) {
-        final data = snapshot.data ?? const {};
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _HealthDataSkeleton();
+        }
+        final data = snapshot.data ?? const <String, double>{};
         final steps = data[HealthRecordType.steps.name] ?? 0;
-        final heartRate = data[HealthRecordType.heartRate.name] ?? 0;
-        final calories =
-            data[HealthRecordType.activeEnergyBurned.name] ?? 0;
-
+        final heart = data[HealthRecordType.heartRate.name] ?? 0;
+        final calories = data[HealthRecordType.activeEnergyBurned.name] ?? 0;
         return ListView(
-          padding: EdgeInsets.zero,
+          padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
           children: [
+            const MenuHeader(
+              title: 'Health',
+              subtitle: 'Today\'s activity and recovery signals.',
+              icon: Icons.favorite_rounded,
+              color: AppColors.cooldown,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.sm,
+                AppSpacing.md,
+                AppSpacing.lg,
+              ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: 11,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.cooldown.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: AppColors.cooldown.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle_rounded,
+                      color: AppColors.cooldown,
+                      size: 18,
+                    ),
+                    SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'CONNECTED',
+                      style: TextStyle(
+                        color: AppColors.cooldown,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                0,
+                AppSpacing.md,
+                AppSpacing.sm,
+              ),
+              child: MenuSectionTitle(label: 'TODAY'),
+            ),
+            _HealthMetric(
+              title: 'Steps',
+              value: '${steps.toInt()}',
+              unit: 'steps',
+              icon: Icons.directions_walk_rounded,
+            ),
+            _HealthMetric(
+              title: 'Heart rate',
+              value: heart == 0 ? '—' : '${heart.toInt()}',
+              unit: 'bpm',
+              icon: Icons.monitor_heart_rounded,
+            ),
+            _HealthMetric(
+              title: 'Calories',
+              value: '${calories.toInt()}',
+              unit: 'kcal',
+              icon: Icons.local_fire_department_rounded,
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.md,
                 AppSpacing.md,
                 AppSpacing.md,
-                AppSpacing.sm,
+                0,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Health Connect',
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineMedium
-                            ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.onSurface),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Today\'s activity and health metrics',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: AppColors.onSurfaceMute),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _StatCard(
-              title: 'Steps',
-              value: '${steps.toInt()}',
-              unit: 'steps',
-              icon: Icons.directions_walk,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            _StatCard(
-              title: 'Heart Rate',
-              value: heartRate == 0 ? '—' : '${heartRate.toInt()}',
-              unit: 'bpm',
-              icon: Icons.monitor_heart,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            _StatCard(
-              title: 'Calories',
-              value: '${calories.toInt()}',
-              unit: 'kcal',
-              icon: Icons.local_fire_department,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            FilledButton.icon(
-              onPressed: () async {
-                await service.syncToday();
-                if (context.mounted) {
+              child: FilledButton.icon(
+                onPressed: () async {
+                  await service.syncToday();
                   ref.invalidate(healthConnectServiceProvider);
-                }
-              },
-              icon: const Icon(Icons.sync),
-              label: const Text('Sync Now'),
+                },
+                icon: const Icon(Icons.sync_rounded),
+                label: const Text('Sync now'),
+              ),
             ),
           ],
         );
@@ -172,8 +239,8 @@ class HealthScreen extends ConsumerWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
+class _HealthMetric extends StatelessWidget {
+  const _HealthMetric({
     required this.title,
     required this.value,
     required this.unit,
@@ -188,40 +255,105 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 0,
-      color: AppColors.surfaceHigh,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        side: const BorderSide(color: AppColors.border),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          children: [
-            Icon(icon, size: 32, color: AppColors.primary),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
+      child: ListTile(
+        leading: Icon(icon, color: AppColors.primary, size: 30),
+        title: Text(title),
+        subtitle: Text(
+          '$value $unit',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        trailing: const Icon(Icons.insights_rounded),
+      ),
+    );
+  }
+}
+
+class _PermissionView extends StatelessWidget {
+  const _PermissionView({required this.service, required this.ref});
+
+  final HealthConnectService service;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    return _StateView(
+      title: 'Health',
+      subtitle: 'Connect the data behind your effort.',
+      icon: Icons.shield_outlined,
+      message: 'Grant Health Connect permission to sync activity data.',
+      action: FilledButton.icon(
+        onPressed: () async {
+          await service.requestPermissions();
+          ref.invalidate(healthConnectServiceProvider);
+        },
+        icon: const Icon(Icons.check_circle_outline),
+        label: const Text('Grant permissions'),
+      ),
+    );
+  }
+}
+
+class _StateView extends StatelessWidget {
+  const _StateView({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.message,
+    this.action,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String message;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        MenuHeader(
+          title: title,
+          subtitle: subtitle,
+          icon: icon,
+          color: AppColors.cooldown,
+        ),
+        Expanded(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.onSurfaceMute,
-                        ),
+                  Container(
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      color: AppColors.cooldown.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, size: 42, color: AppColors.cooldown),
                   ),
+                  const SizedBox(height: AppSpacing.lg),
                   Text(
-                    '$value $unit',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontSize: 20,
-                        ),
+                    message,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
+                  if (action != null) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    action!,
+                  ],
                 ],
               ),
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
