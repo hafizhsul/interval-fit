@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/providers.dart';
 import '../../data/models/workout_template.dart';
@@ -11,15 +10,17 @@ import '../../shared/widgets/loading_skeleton.dart';
 import '../health/health_screen.dart';
 import '../history/history_screen.dart';
 import '../settings/settings_screen.dart';
+
 import '../stats/stats_screen.dart';
 import '../template_builder/template_builder_screen.dart';
 import 'widgets/workout_confirm_sheet.dart';
 
 class _NavPage {
-  const _NavPage(this.label, this.iconPath);
+  const _NavPage(this.label, this.icon, this.selectedIcon);
 
   final String label;
-  final String iconPath;
+  final IconData icon;
+  final IconData selectedIcon;
 }
 
 class _TransparentTitleLogo extends StatelessWidget {
@@ -156,10 +157,11 @@ class _TransparentTitleLogo extends StatelessWidget {
 }
 
 const _navPages = [
-  _NavPage('Home', 'assets/svg/home.svg'),
-  _NavPage('History', 'assets/svg/history.svg'),
-  _NavPage('Stats', 'assets/svg/stats.svg'),
-  _NavPage('Health', 'assets/svg/heart.svg'),
+  _NavPage('Home', Icons.home_outlined, Icons.home_rounded),
+  _NavPage('History', Icons.history_outlined, Icons.history_rounded),
+  _NavPage('Stats', Icons.insights_outlined, Icons.insights_rounded),
+  _NavPage('Health', Icons.favorite_outline_rounded, Icons.favorite_rounded),
+  _NavPage('Profile', Icons.person_outline_rounded, Icons.person_rounded),
 ];
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -172,6 +174,19 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _index = 0;
 
+  static const _pages = [
+    _HomeDashboard(),
+    HistoryScreen(),
+    StatsScreen(),
+    HealthScreen(),
+    SettingsScreen(embedded: true),
+  ];
+
+  /// Build pages on first visit, keep them alive afterwards. Eager IndexedStack
+  /// would instantiate every tab's providers at startup (History, Stats,
+  /// Health) and break tests and cold-start with unneeded DB work.
+  final _built = <int>{0};
+
   @override
   Widget build(BuildContext context) {
     ref.watch(themeModeProvider);
@@ -179,122 +194,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         titleSpacing: AppSpacing.md,
         title: const _TransparentTitleLogo(),
-        actions: [
-          IconButton(
-            tooltip: 'Settings',
-            icon: SvgPicture.asset(
-              'assets/svg/settings.svg',
-              width: 22,
-              height: 22,
-              colorFilter: ColorFilter.mode(
-                AppColors.onSurfaceMute,
-                BlendMode.srcIn,
-              ),
+      ),
+      body: IndexedStack(
+        index: _index,
+        children: [
+          for (var i = 0; i < _pages.length; i++)
+            Offstage(
+              offstage: !_built.contains(i),
+              child: _built.contains(i) ? _pages[i] : const SizedBox.shrink(),
             ),
-            onPressed: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
-          ),
         ],
       ),
-      body: _selectedPage(),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Create workout',
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.background,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          side: BorderSide(color: AppColors.background, width: 5),
-        ),
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const TemplateBuilderScreen()),
-        ),
-        child: const Icon(Icons.add_rounded, size: 28),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-          child: Container(
-            height: 72,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceHigh,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: AppColors.border),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x33000000),
-                  blurRadius: 18,
-                  offset: Offset(0, 8),
-                ),
-              ],
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _index,
+        onDestinationSelected: (index) => setState(() {
+          _built.add(index);
+          _index = index;
+        }),
+        // Theme-derived (never desyncs from the rendered theme): AppTheme
+        // maps surfaceContainer to surfaceHigh — same value as the old
+        // AppColors.surfaceHigh, but rebuilt on Theme change.
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+        indicatorColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.13),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        destinations: [
+          for (final page in _navPages)
+            NavigationDestination(
+              icon: Icon(page.icon),
+              selectedIcon: Icon(page.selectedIcon),
+              label: page.label,
             ),
-            child: Row(
-              children: [
-                Expanded(child: _navButton(0)),
-                Expanded(child: _navButton(1)),
-                const SizedBox(width: 70),
-                Expanded(child: _navButton(2)),
-                Expanded(child: _navButton(3)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _selectedPage() {
-    switch (_index) {
-      case 1:
-        return const HistoryScreen();
-      case 2:
-        return const StatsScreen();
-      case 3:
-        return const HealthScreen();
-      default:
-        return const _HomeDashboard();
-    }
-  }
-
-  Widget _navButton(int index) {
-    final selected = _index == index;
-    final color = selected ? AppColors.primary : AppColors.onSurfaceDim;
-    return InkWell(
-      onTap: () => setState(() => _index = index),
-      splashFactory: NoSplash.splashFactory,
-      child: Center(
-        child: AnimatedContainer(
-          duration: AppMotion.fast,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primary.withValues(alpha: 0.13)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset(
-                _navPages[index].iconPath,
-                width: 21,
-                height: 21,
-                colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _navPages[index].label,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 10,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -740,20 +672,7 @@ class _TemplateCard extends ConsumerWidget {
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
-                    TextButton.icon(
-                      onPressed: onTap,
-                      icon: Icon(
-                        Icons.play_arrow_rounded,
-                        size: 16,
-                        color: accent,
-                      ),
-                      label: Text('Start', style: TextStyle(color: accent)),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        minimumSize: const Size(0, 36),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ),
+                    Icon(Icons.play_arrow_rounded, size: 18, color: accent),
                   ],
                 ),
               ],
@@ -796,7 +715,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Tap + to build your first interval session.',
+              'Build your first session — choose intervals, rounds, and rest.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,
             ),

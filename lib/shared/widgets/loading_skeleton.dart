@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../design/tokens.dart';
-import '../theme/app_theme.dart';
 
-class SkeletonBox extends StatelessWidget {
+class SkeletonBox extends StatefulWidget {
   const SkeletonBox({
     super.key,
     this.width,
@@ -16,15 +15,45 @@ class SkeletonBox extends StatelessWidget {
   final double radius;
 
   @override
+  State<SkeletonBox> createState() => _SkeletonBoxState();
+}
+
+class _SkeletonBoxState extends State<SkeletonBox>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+      lowerBound: 0.45,
+      upperBound: 1.0,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final animate = !MediaQuery.disableAnimationsOf(context);
+    final scheme = Theme.of(context).colorScheme;
     return ExcludeSemantics(
-      child: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceHigh,
-          borderRadius: BorderRadius.circular(radius),
-          border: Border.all(color: AppColors.border),
+      child: FadeTransition(
+        opacity: animate ? _pulse : const AlwaysStoppedAnimation(0.8),
+        child: Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(widget.radius),
+            border: Border.all(color: scheme.outline),
+          ),
         ),
       ),
     );

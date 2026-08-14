@@ -32,7 +32,7 @@ final settingsServiceProvider = Provider<SettingsService>(
 
 final themeModeProvider = StateProvider<ThemeMode>((ref) {
   final settings = ref.watch(settingsServiceProvider);
-  return settings.darkTheme ? ThemeMode.dark : ThemeMode.light;
+  return settings.themeMode;
 });
 
 final voiceServiceProvider = Provider<VoiceService>((ref) {
@@ -81,11 +81,20 @@ final templateListProvider = FutureProvider.autoDispose<List<WorkoutTemplate>>((
 final workoutRefreshTrigger = StateProvider<int>((ref) => 0);
 
 /// Bootstrap: buka DB + prefs, kembalikan overrides untuk ProviderScope.
-Future<List<Override>> bootstrapOverrides() async {
+///
+/// [onProgress] reports bootstrap milestones (0..1) so the splash can show
+/// real loading progress instead of a fake timer.
+Future<List<Override>> bootstrapOverrides({
+  void Function(double)? onProgress,
+}) async {
   final db = await AppDatabase.instance();
+  onProgress?.call(0.4);
   final prefs = await SharedPreferences.getInstance();
-  return [
+  onProgress?.call(0.8);
+  final overrides = [
     databaseProvider.overrideWithValue(db),
     sharedPrefsProvider.overrideWithValue(prefs),
   ];
+  onProgress?.call(1.0);
+  return overrides;
 }

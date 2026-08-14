@@ -13,6 +13,7 @@ class WorkoutConfirmSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final totalSeconds =
         template.warmupSeconds +
         template.cooldownSeconds +
@@ -80,9 +81,9 @@ class WorkoutConfirmSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: scheme.surface,
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: scheme.outline),
             ),
             child: Column(
               children: [
@@ -106,7 +107,7 @@ class WorkoutConfirmSheet extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Divider(color: AppColors.border),
+                Divider(color: scheme.outline),
                 const SizedBox(height: AppSpacing.md),
                 Row(
                   children: [

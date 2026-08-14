@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../design/tokens.dart';
-import '../theme/app_theme.dart';
 
 class SegmentedProgress extends StatelessWidget {
   const SegmentedProgress({
@@ -21,12 +20,13 @@ class SegmentedProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     if (total <= 0) return const SizedBox.shrink();
 
+    final scheme = Theme.of(context).colorScheme;
     if (total > _maxSegments) {
       return Column(
         children: [
           LinearProgressIndicator(
             value: total > 0 ? (current - 1) / (total - 1) : 0,
-            backgroundColor: AppColors.onSurfaceDim,
+            backgroundColor: scheme.outlineVariant,
             valueColor: AlwaysStoppedAnimation(color),
             minHeight: 4,
           ),
@@ -34,7 +34,7 @@ class SegmentedProgress extends StatelessWidget {
           Text(
             '$current / $total',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: AppColors.onSurfaceMute,
+              color: scheme.onSurfaceVariant,
               letterSpacing: 1,
             ),
           ),
@@ -58,8 +58,8 @@ class SegmentedProgress extends StatelessWidget {
             color: isDone
                 ? color
                 : isCurrent
-                    ? color.withValues(alpha: 0.6)
-                    : AppColors.onSurfaceDim,
+                ? color.withValues(alpha: 0.6)
+                : scheme.outlineVariant,
             borderRadius: BorderRadius.circular(2),
           ),
         );

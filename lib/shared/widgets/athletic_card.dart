@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../design/tokens.dart';
-import '../theme/app_theme.dart';
 
 class AthleticCard extends StatefulWidget {
   const AthleticCard({
@@ -23,9 +22,16 @@ class AthleticCard extends StatefulWidget {
   State<AthleticCard> createState() => _AthleticCardState();
 }
 
-class _AthleticCardState extends State<AthleticCard> with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl = AnimationController(vsync: this, duration: AppMotion.fast);
-  late final Animation<double> _scale = Tween(begin: 1.0, end: 0.98).animate(CurvedAnimation(parent: _ctrl, curve: AppMotion.easing));
+class _AthleticCardState extends State<AthleticCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: AppMotion.fast,
+  );
+  late final Animation<double> _scale = Tween(
+    begin: 1.0,
+    end: 0.98,
+  ).animate(CurvedAnimation(parent: _ctrl, curve: AppMotion.easing));
   bool _down = false;
 
   @override
@@ -36,7 +42,11 @@ class _AthleticCardState extends State<AthleticCard> with SingleTickerProviderSt
 
   void _setDown(bool v) {
     if (_down != v) setState(() => _down = v);
-    if (v) { _ctrl.forward(); } else { _ctrl.reverse(); }
+    if (v) {
+      _ctrl.forward();
+    } else {
+      _ctrl.reverse();
+    }
   }
 
   @override
@@ -52,9 +62,9 @@ class _AthleticCardState extends State<AthleticCard> with SingleTickerProviderSt
           margin: const EdgeInsets.only(bottom: AppSpacing.md),
           constraints: const BoxConstraints(minHeight: 48),
           decoration: BoxDecoration(
-            color: AppColors.surfaceHigh,
+            color: Theme.of(context).colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: Theme.of(context).colorScheme.outline),
           ),
           child: IntrinsicHeight(
             child: Row(
@@ -70,9 +80,24 @@ class _AthleticCardState extends State<AthleticCard> with SingleTickerProviderSt
                       ),
                     ),
                   ),
-                if (widget.leading != null) Padding(padding: const EdgeInsets.all(AppSpacing.md), child: widget.leading!),
-                Expanded(child: Padding(padding: const EdgeInsets.symmetric(vertical: AppSpacing.md), child: widget.child)),
-                if (widget.trailing != null) Padding(padding: const EdgeInsets.only(right: AppSpacing.md), child: widget.trailing!),
+                if (widget.leading != null)
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: widget.leading!,
+                  ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.md,
+                    ),
+                    child: widget.child,
+                  ),
+                ),
+                if (widget.trailing != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.md),
+                    child: widget.trailing!,
+                  ),
               ],
             ),
           ),

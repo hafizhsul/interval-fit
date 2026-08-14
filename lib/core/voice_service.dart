@@ -13,6 +13,7 @@ abstract class Tts {
 
 abstract class BeepPlayer {
   Future<void> beep();
+  Future<void> playFinish();
 }
 
 class FlutterTtsAdapter implements Tts {
@@ -45,6 +46,9 @@ class AudioPlayerBeep implements BeepPlayer {
   final AudioPlayer _player;
   @override
   Future<void> beep() => _player.play(AssetSource('audio/beep.wav'));
+
+  @override
+  Future<void> playFinish() => _player.play(AssetSource('audio/finish.mp3'));
 }
 
 final _audioDuck = AudioContext(
@@ -56,12 +60,9 @@ final _audioDuck = AudioContext(
 );
 
 class VoiceService {
-  VoiceService({
-    Tts? tts,
-    BeepPlayer? beep,
-    bool enabled = true,
-  })  : _tts = tts ?? FlutterTtsAdapter(),
-        _beep = beep ?? AudioPlayerBeep() {
+  VoiceService({Tts? tts, BeepPlayer? beep, bool enabled = true})
+    : _tts = tts ?? FlutterTtsAdapter(),
+      _beep = beep ?? AudioPlayerBeep() {
     _enabled = enabled;
   }
 
@@ -87,7 +88,7 @@ class VoiceService {
   Future<void> playCompleteSound() async {
     await _tts.stop();
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    await _beep.beep();
+    await _beep.playFinish();
   }
 
   Future<void> speakPhaseCue(WorkoutPhase phase) {

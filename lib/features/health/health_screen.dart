@@ -206,7 +206,7 @@ class _DataView extends StatelessWidget {
             ),
             _HealthMetric(
               title: 'Heart rate',
-              value: heart == 0 ? '—' : '${heart.toInt()}',
+              value: heart == 0 ? '--' : '${heart.toInt()}',
               unit: 'bpm',
               icon: Icons.monitor_heart_rounded,
             ),

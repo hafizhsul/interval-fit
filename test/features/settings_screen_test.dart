@@ -10,7 +10,7 @@ import 'package:interval_fit/features/settings/settings_screen.dart';
 import 'package:interval_fit/shared/theme/app_theme.dart';
 
 void main() {
-  testWidgets('appearance switch updates and persists light theme', (
+  testWidgets('theme segmented control updates and persists each mode', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -28,8 +28,9 @@ void main() {
             final mode = ref.watch(themeModeProvider);
             AppColors.setLight(mode == ThemeMode.light);
             return MaterialApp(
-              theme: mode == ThemeMode.light ? AppTheme.light : AppTheme.dark,
-              themeMode: ThemeMode.light,
+              theme: AppTheme.light,
+              darkTheme: AppTheme.dark,
+              themeMode: mode,
               home: const SettingsScreen(),
             );
           },
@@ -37,18 +38,47 @@ void main() {
       ),
     );
 
-    expect(find.text('Dark theme'), findsOneWidget);
-    await tester.tap(find.byType(Switch).last);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Bright and clear for daytime'), findsOneWidget);
-    expect(prefs.getBool('dark_theme'), isFalse);
+    // Legacy default: no theme_mode key -> dark (old v1.1.x behavior).
     expect(
       tester
-          .widget<MaterialApp>(find.byType(MaterialApp))
-          .theme!
-          .scaffoldBackgroundColor,
-      const Color(0xFFF7F4EF),
+          .widget<SegmentedButton<ThemeMode>>(
+            find.byType(SegmentedButton<ThemeMode>),
+          )
+          .selected,
+      {ThemeMode.dark},
     );
+
+    // Light.
+    await tester.tap(find.text('Light'));
+    await tester.pumpAndSettle();
+    expect(prefs.getString('theme_mode'), 'light');
+    expect(prefs.containsKey('dark_theme'), isFalse);
+    expect(
+      tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
+      ThemeMode.light,
+    );
+
+    // System.
+    await tester.tap(find.text('System'));
+    await tester.pumpAndSettle();
+    expect(prefs.getString('theme_mode'), 'system');
+    expect(
+      tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
+      ThemeMode.system,
+    );
+  });
+
+  test('SettingsService migrates legacy dark_theme boolean', () {
+    SharedPreferences.setMockInitialValues({'dark_theme': false});
+    return SharedPreferences.getInstance().then((prefs) {
+      final settings = SettingsService(prefs);
+      expect(settings.themeMode, ThemeMode.light);
+      // New write removes the legacy key so it can't override.
+      return settings.setThemeMode(ThemeMode.system).then((_) {
+        expect(settings.themeMode, ThemeMode.system);
+        expect(prefs.containsKey('dark_theme'), isFalse);
+        expect(prefs.getString('theme_mode'), 'system');
+      });
+    });
   });
 }

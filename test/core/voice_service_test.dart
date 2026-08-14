@@ -18,7 +18,9 @@ void main() {
       () => tts.speak(any(), focus: any(named: 'focus')),
     ).thenAnswer((_) async {});
     when(() => tts.initLocale()).thenAnswer((_) async {});
+    when(() => tts.stop()).thenAnswer((_) async {});
     when(() => beep.beep()).thenAnswer((_) async {});
+    when(() => beep.playFinish()).thenAnswer((_) async {});
   });
 
   VoiceService svc({bool enabled = true}) =>
@@ -54,9 +56,7 @@ void main() {
     await s.speakPhaseCue(WorkoutPhase.warmup);
     await s.speakPhaseCue(WorkoutPhase.cooldown);
     await s.speakPhaseCue(WorkoutPhase.done);
-    verifyNever(
-      () => tts.speak(any(), focus: any(named: 'focus')),
-    );
+    verifyNever(() => tts.speak(any(), focus: any(named: 'focus')));
     verifyNever(() => beep.beep());
   });
 
@@ -64,9 +64,7 @@ void main() {
     final s = svc(enabled: false);
     await s.speakCountdown(2);
     await s.speakPhaseCue(WorkoutPhase.work);
-    verifyNever(
-      () => tts.speak(any(), focus: any(named: 'focus')),
-    );
+    verifyNever(() => tts.speak(any(), focus: any(named: 'focus')));
     verifyNever(() => beep.beep());
   });
 
@@ -74,9 +72,15 @@ void main() {
     final s = svc();
     s.setEnabled(false);
     await s.speakCountdown(1);
-    verifyNever(
-      () => tts.speak(any(), focus: any(named: 'focus')),
-    );
+    verifyNever(() => tts.speak(any(), focus: any(named: 'focus')));
+  });
+
+  test('playCompleteSound stops TTS then plays the finish sound', () async {
+    final s = svc();
+    await s.playCompleteSound();
+    verify(() => tts.stop()).called(1);
+    verify(() => beep.playFinish()).called(1);
+    verifyNever(() => beep.beep());
   });
 
   test('init TTS throws -> subsequent cues beep, not speak', () async {
@@ -86,8 +90,6 @@ void main() {
     await s.speakCountdown(3);
     await s.speakPhaseCue(WorkoutPhase.rest);
     verify(() => beep.beep()).called(2);
-    verifyNever(
-      () => tts.speak(any(), focus: any(named: 'focus')),
-    );
+    verifyNever(() => tts.speak(any(), focus: any(named: 'focus')));
   });
 }

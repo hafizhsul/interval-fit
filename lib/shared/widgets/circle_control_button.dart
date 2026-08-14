@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../design/tokens.dart';
-import '../theme/app_theme.dart';
 
 class CircleControlButton extends StatefulWidget {
   const CircleControlButton({
@@ -63,7 +62,7 @@ class _CircleControlButtonState extends State<CircleControlButton> {
               fontFamily: 'Barlow',
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.onSurfaceMute,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],

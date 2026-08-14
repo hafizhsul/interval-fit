@@ -2,8 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
-
 class PhaseProgressRing extends StatelessWidget {
   const PhaseProgressRing({
     super.key,
@@ -30,6 +28,7 @@ class PhaseProgressRing extends StatelessWidget {
           progress: progress,
           color: color,
           strokeWidth: strokeWidth,
+          trackColor: Theme.of(context).colorScheme.outline,
         ),
         child: Padding(
           padding: EdgeInsets.all(strokeWidth * 2.5),
@@ -45,11 +44,13 @@ class PhaseRingPainter extends CustomPainter {
     required this.progress,
     required this.color,
     required this.strokeWidth,
+    required this.trackColor,
   });
 
   final double progress;
   final Color color;
   final double strokeWidth;
+  final Color trackColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -58,7 +59,7 @@ class PhaseRingPainter extends CustomPainter {
     final track = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
-      ..color = AppColors.border;
+      ..color = trackColor;
     final arc = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
@@ -76,5 +77,7 @@ class PhaseRingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(PhaseRingPainter old) =>
-      old.progress != progress || old.color != color;
+      old.progress != progress ||
+      old.color != color ||
+      old.trackColor != trackColor;
 }

@@ -205,72 +205,6 @@ class _HistorySummary extends StatelessWidget {
               _SummaryMetric(value: '$rate%', label: 'FINISH'),
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            'LAST 7 DAYS',
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(letterSpacing: 1.4),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: List.generate(7, (index) {
-              final date = DateUtils.dateOnly(
-                DateTime.now(),
-              ).subtract(Duration(days: 6 - index));
-              final count = sessions.where((session) {
-                final d = DateUtils.dateOnly(
-                  DateTime.fromMillisecondsSinceEpoch(
-                    session.startedAt,
-                  ).toLocal(),
-                );
-                return d == date;
-              }).length;
-              return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    right: index == 6 ? 0 : AppSpacing.xs,
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        _dayLabel(date),
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelSmall?.copyWith(fontSize: 10),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: count == 0
-                              ? AppColors.background
-                              : AppColors.primary.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                          border: Border.all(
-                            color: count == 0
-                                ? AppColors.border
-                                : AppColors.primary,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            count == 0 ? '·' : '$count',
-                            style: TextStyle(
-                              color: count == 0
-                                  ? AppColors.onSurfaceDim
-                                  : AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
         ],
       ),
     );
@@ -465,9 +399,6 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
-
-String _dayLabel(DateTime date) =>
-    const ['', 'M', 'T', 'W', 'T', 'F', 'S', 'S'][date.weekday];
 
 String _assetPath(String type) {
   switch (type) {

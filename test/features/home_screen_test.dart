@@ -74,5 +74,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('No templates yet'), findsOneWidget);
+    // Empty state must offer a path to creation — the + FAB is gone.
+    expect(find.text('Create first workout'), findsOneWidget);
   });
 }

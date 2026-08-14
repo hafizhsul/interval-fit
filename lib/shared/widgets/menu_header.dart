@@ -46,7 +46,7 @@ class MenuHeader extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 28,
                   ),
                 ),

@@ -22,6 +22,8 @@ class _FakeTts implements Tts {
 class _NoBeep implements BeepPlayer {
   @override
   Future<void> beep() async {}
+  @override
+  Future<void> playFinish() async {}
 }
 
 class FakeClock implements ElapsedClock {
@@ -46,14 +48,14 @@ class MockHistory extends Mock implements HistoryRepository {}
 class FakeSession extends Fake implements WorkoutSession {}
 
 WorkoutTemplate _tpl() => WorkoutTemplate(
-      id: 1,
-      name: 'Test',
-      exerciseType: 'skipping',
-      sets: 2,
-      workSeconds: 10,
-      restSeconds: 5,
-      createdAt: 0,
-    );
+  id: 1,
+  name: 'Test',
+  exerciseType: 'skipping',
+  sets: 2,
+  workSeconds: 10,
+  restSeconds: 5,
+  createdAt: 0,
+);
 
 void main() {
   setUpAll(() => registerFallbackValue(FakeSession()));
@@ -64,17 +66,17 @@ void main() {
   setUp(() {
     history = MockHistory();
     clock = FakeClock();
-    when(() => history.insertSession(any())).thenAnswer(
-      (i) async => i.positionalArguments[0] as WorkoutSession,
-    );
+    when(
+      () => history.insertSession(any()),
+    ).thenAnswer((i) async => i.positionalArguments[0] as WorkoutSession);
   });
 
   ActiveWorkoutController build() => ActiveWorkoutController(
-        template: _tpl(),
-        voice: VoiceService(tts: _FakeTts(), beep: _NoBeep()),
-        history: history,
-        clock: clock,
-      );
+    template: _tpl(),
+    voice: VoiceService(tts: _FakeTts(), beep: _NoBeep()),
+    history: history,
+    clock: clock,
+  );
 
   test('sesi selesai penuh tersimpan completed=true, sekali saja', () async {
     final c = build();
@@ -85,8 +87,7 @@ void main() {
     }
     await Future<void>.delayed(Duration.zero);
 
-    final captured =
-        verify(() => history.insertSession(captureAny())).captured;
+    final captured = verify(() => history.insertSession(captureAny())).captured;
     expect(captured.length, 1);
     final s = captured.first as WorkoutSession;
     expect(s.completed, true);
@@ -101,8 +102,7 @@ void main() {
     // masih di set 1 work
     await c.stop();
 
-    final captured =
-        verify(() => history.insertSession(captureAny())).captured;
+    final captured = verify(() => history.insertSession(captureAny())).captured;
     expect(captured.length, 1);
     final s = captured.first as WorkoutSession;
     expect(s.completed, false);
@@ -111,26 +111,29 @@ void main() {
     c.dispose();
   });
 
-  test('stop di fase rest set N → setsCompleted = N (work set N sudah tuntas)',
-      () async {
-    // Bug lama: stop di rest N menghitung N-1 (currentSet-1). Padahal work set N
-    // sudah selesai saat rest N jalan → harusnya N.
-    final c = build();
-    c.start();
-    // Segmen: getReady(3) → work set 1(10) → rest set 1(5) → work set 2(10) → done
-    c.skip(); // getReady → work set 1
-    c.skip(); // work set 1 → rest set 1
-    expect(c.state.value.phase, WorkoutPhase.rest);
-    expect(c.state.value.currentSet, 1);
-    await c.stop();
+  test(
+    'stop di fase rest set N → setsCompleted = N (work set N sudah tuntas)',
+    () async {
+      // Bug lama: stop di rest N menghitung N-1 (currentSet-1). Padahal work set N
+      // sudah selesai saat rest N jalan → harusnya N.
+      final c = build();
+      c.start();
+      // Segmen: getReady(3) → work set 1(10) → rest set 1(5) → work set 2(10) → done
+      c.skip(); // getReady → work set 1
+      c.skip(); // work set 1 → rest set 1
+      expect(c.state.value.phase, WorkoutPhase.rest);
+      expect(c.state.value.currentSet, 1);
+      await c.stop();
 
-    final captured =
-        verify(() => history.insertSession(captureAny())).captured;
-    final s = captured.first as WorkoutSession;
-    expect(s.completed, false);
-    expect(s.setsCompleted, 1); // work set 1 tuntas; stop di rest set 1
-    c.dispose();
-  });
+      final captured = verify(
+        () => history.insertSession(captureAny()),
+      ).captured;
+      final s = captured.first as WorkoutSession;
+      expect(s.completed, false);
+      expect(s.setsCompleted, 1); // work set 1 tuntas; stop di rest set 1
+      c.dispose();
+    },
+  );
 
   test('saveProgress simpan parsial tanpa hentikan engine', () async {
     final c = build();
@@ -141,13 +144,11 @@ void main() {
     expect(c.saveFuture, isNull);
     await c.saveProgress();
 
-    final captured =
-        verify(() => history.insertSession(captureAny())).captured;
+    final captured = verify(() => history.insertSession(captureAny())).captured;
     final s = captured.first as WorkoutSession;
     expect(s.completed, false);
     expect(s.setsCompleted, 0); // masih di work set 1, belum tuntas
-    expect(c.state.value.phase,
-        WorkoutPhase.work); // engine masih jalan
+    expect(c.state.value.phase, WorkoutPhase.work); // engine masih jalan
     // saveFuture tetap null karena saveProgress tidak menyentuhnya
     expect(c.saveFuture, isNull);
     c.dispose();

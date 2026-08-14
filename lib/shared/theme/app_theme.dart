@@ -14,8 +14,8 @@ class AppColors {
   static const _darkSurfaceHigh = Color(0xFF181E22);
   static const _darkBorder = Color(0xFF293238);
   static const _darkOnSurface = Color(0xFFF4F1EA);
-  static const _darkOnSurfaceMute = Color(0xFF9AA6A8);
-  static const _darkOnSurfaceDim = Color(0xFF566166);
+  static const _darkOnSurfaceMute = Color(0xFFABB7B9);
+  static const _darkOnSurfaceDim = Color(0xFF7A868B);
 
   static const _lightBackground = Color(0xFFF7F4EF);
   static const _lightSurface = Color(0xFFFFFCF7);
@@ -23,7 +23,7 @@ class AppColors {
   static const _lightBorder = Color(0xFFE3DCD3);
   static const _lightOnSurface = Color(0xFF1D282A);
   static const _lightOnSurfaceMute = Color(0xFF667477);
-  static const _lightOnSurfaceDim = Color(0xFFA3ADAE);
+  static const _lightOnSurfaceDim = Color(0xFF879296);
 
   static Color get background => _light ? _lightBackground : _darkBackground;
   static Color get surface => _light ? _lightSurface : _darkSurface;
@@ -67,8 +67,8 @@ class AppTheme {
     final foreground = isLight
         ? const Color(0xFF1D282A)
         : const Color(0xFFF4F1EA);
-    final muted = isLight ? const Color(0xFF667477) : const Color(0xFF9AA6A8);
-    final dim = isLight ? const Color(0xFFA3ADAE) : const Color(0xFF566166);
+    final muted = isLight ? const Color(0xFF667477) : const Color(0xFFABB7B9);
+    final dim = isLight ? const Color(0xFF879296) : const Color(0xFF7A868B);
     final base = isLight
         ? ThemeData.light(useMaterial3: true)
         : ThemeData.dark(useMaterial3: true);
@@ -83,7 +83,9 @@ class AppTheme {
       surfaceContainerHighest: isLight ? const Color(0xFFF0EBE4) : surfaceHigh,
       onSecondary: Colors.white,
       onSurface: foreground,
+      onSurfaceVariant: muted,
       outline: border,
+      outlineVariant: dim,
     );
 
     final textTheme = base.textTheme

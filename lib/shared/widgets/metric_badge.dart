@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../design/tokens.dart';
-import '../theme/app_theme.dart';
 
 class MetricBadge extends StatelessWidget {
   const MetricBadge({
@@ -19,12 +18,16 @@ class MetricBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
-        color: AppColors.surfaceHigh,
+        color: scheme.surfaceContainer,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: scheme.outline),
       ),
       child: child != null
           ? Column(
